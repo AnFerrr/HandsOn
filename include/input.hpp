@@ -8,8 +8,7 @@ namespace HandsOn {
     struct Joystick;
 
     struct Input {
-        Input(std::shared_ptr<Joystick> js_dest, int axis)
-            : js_dest(js_dest), axis(axis) {};
+        Input(std::shared_ptr<Joystick> js_dest, int axis);
 
         std::vector<void (*)()> filters;
         std::shared_ptr<Joystick> js_dest;

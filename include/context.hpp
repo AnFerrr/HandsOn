@@ -2,6 +2,8 @@
 #define CONTEXT_HPP
 
 #include "../include/joystick.hpp"
+#include "../include/sdl_joystick.hpp"
+#include "../include/vjoystick.hpp"
 
 namespace HandsOn {
     struct Context {

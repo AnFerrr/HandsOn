@@ -53,6 +53,8 @@ find_package(OpenGL REQUIRED)
 add_executable(hands_on
     src/main.cpp
     src/joystick.cpp
+    src/vjoystick.cpp
+    src/sdl_joystick.cpp
     src/ui.cpp
 )
 target_link_libraries(hands_on PRIVATE
