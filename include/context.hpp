@@ -9,13 +9,17 @@ namespace HandsOn {
     struct Context {
         Context() = default;
         ~Context() {};
-        std::vector<SDLJoystick> js_list;
+        
+        SDL_Window* window;
+        SDL_GLContext gl_context;
 
-        std::shared_ptr<SDLJoystick> js_selected;
+        std::vector<std::shared_ptr<Joystick>> js_list;
         std::shared_ptr<VJoystick> vjs;
 
         std::unordered_map<int, int> key_binds;
         std::unordered_map<int, int> axis_binds;
+
+        bool stopping = false;
     };
 }
 

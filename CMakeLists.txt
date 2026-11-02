@@ -55,6 +55,7 @@ add_executable(hands_on
     src/joystick.cpp
     src/vjoystick.cpp
     src/sdl_joystick.cpp
+    src/input.cpp
     src/ui.cpp
 )
 target_link_libraries(hands_on PRIVATE

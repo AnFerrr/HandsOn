@@ -8,10 +8,13 @@
 
 namespace HandsOn {
     struct SDLJoystick : public Joystick {
-        SDLJoystick(SDL_Joystick* joystick);
+        SDLJoystick(std::string name,
+                short naxes,
+                short nbuttons,
+                SDL_Joystick* js);
         virtual void Update() override;
-        virtual void SetAxis(int axis, int value) override;
-        virtual int GetAxis(int axis) override;
+        virtual void SetInput(Input& input) override;
+        virtual int GetInput(int input) override;
 
         SDL_JoystickID js_id;
         SDL_Joystick* js;

@@ -3,21 +3,21 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 
 #include "input.hpp"
 
 namespace HandsOn {
     struct Context;
     struct Joystick {
+        Joystick(std::string name, short naxes, short nbuttons);
         std::string name = "N/A";
         short naxes = 4;
         short nbuttons = 30;
-        std::unordered_map<int, std::shared_ptr<Input>> inputs;
+        std::vector<std::shared_ptr<Input>> inputs;
 
         virtual void Update() = 0;
-        virtual void SetAxis(int axis, int value) = 0;
-        virtual int GetAxis(int axis) = 0;
+        virtual void SetInput(Input& input) = 0;
+        virtual int GetInput(int input) = 0;
     };
 }
 

@@ -1,4 +1,5 @@
 #include "SDL3/SDL.h"
+#include "SDL3/SDL_events.h"
 #include "SDL3/SDL_joystick.h"
 #include <SDL3/SDL_stdinc.h>
 #include <iostream>
@@ -6,10 +7,40 @@
 #include <string>
 #include <unordered_map>
 #include "libevdev-1.0/libevdev/libevdev.h"
+#include "../include/ui.hpp"
 #include "../include/joystick.hpp"
 #include "../include/context.hpp"
 
+int update_joystick_list(HandsOn::Context& context) {
+    if (!SDL_HasJoystick()) {
+        std::cerr << "No joystick detected" << std::endl;
+        return -1;
+    }
+
+    int count = 0;
+    auto joysticks = SDL_GetJoysticks(&count);
+    for (int i = 0; i < count; i++) {
+        SDL_Joystick* joystick = SDL_OpenJoystick(joysticks[i]);
+        std::string name = SDL_GetJoystickName(joystick);
+        context.js_list.push_back(std::make_shared<HandsOn::SDLJoystick>(
+                name,
+                SDL_GetNumJoystickAxes(joystick),
+                SDL_GetNumJoystickButtons(joystick),
+                joystick
+                ));
+    }
+
+    SDL_free(joysticks);
+
+    return 0;
+}
+
 SDL_Joystick* select_joystick() {
+    if (!SDL_HasJoystick()) {
+        std::cerr << "No joystick detected" << std::endl;
+        return nullptr;
+    }
+
     bool js_valid = false;
     while (!js_valid) {
         std::cout << "Joystick list: " << std::endl;
@@ -24,8 +55,6 @@ SDL_Joystick* select_joystick() {
 
         std::cout << "Input joystick id: ";
         std::string user_input;
-        //std::cin >> user_input;
-        //int js_id = std::stoi(user_input);
         int js_id = 5;
 
         SDL_JoystickID id;
@@ -49,52 +78,45 @@ SDL_Joystick* select_joystick() {
 }
 
 int sdl_init() {
+    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     if (!SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_VIDEO)) {
         std::cerr << "SDL3 couldn't initialize." << std::endl;
-        return 1;
-    }
-
-    if (!SDL_HasJoystick()) {
-        std::cerr << "No joystick detected" << std::endl;
         return 1;
     }
 
     return 0;
 }
 
-/* TODO: Rewrite to have a list of axes? To centralize modifications instead of
- * having to get axes from the joystick to edit them.
- *
- * Input and Output class?
- * List of I/O?
- * Just Inputs in and out?
- */
 void setup_binds(HandsOn::Context& context) {
-    context.js_selected->inputs[0] =
-        std::make_shared<HandsOn::Input>(context.vjs, 0);
-    context.js_selected->inputs[1] =
-        std::make_shared<HandsOn::Input>(context.vjs, 1);
-    context.js_selected->inputs[2] =
-        std::make_shared<HandsOn::Input>(context.vjs, 2);
-    context.js_selected->inputs[3] =
-        std::make_shared<HandsOn::Input>(context.vjs, 3);
+    auto js_selected = context.js_list[0];
+    js_selected->inputs.push_back(
+        std::make_shared<HandsOn::Input>(context.vjs, 0, 0, HO_AXIS));
+    js_selected->inputs[0]->filters.push_back([](HandsOn::Input& input){
+        input.value = input.value * -1;
+    });
+    js_selected->inputs.push_back(
+        std::make_shared<HandsOn::Input>(context.vjs, 1, 1, HO_AXIS));
+    js_selected->inputs.push_back(
+        std::make_shared<HandsOn::Input>(context.vjs, 2, 2, HO_AXIS));
+    js_selected->inputs.push_back(
+        std::make_shared<HandsOn::Input>(context.vjs, 3, 3, HO_AXIS));
 
-    //context.vjs->BindButton(
-    //        HandsOn::Button(context.js_selected, 0),
-    //        0x100);
-    //context.vjs->BindButton(
-    //        HandsOn::Button(context.js_selected, 1),
-    //        0x101);
-    //context.vjs->BindButton(
-    //        HandsOn::Button(context.js_selected, 2),
-    //        0x102);
-    //context.vjs->BindButton(
-    //        HandsOn::Button(context.js_selected, 3),
-    //        0x103);
+    js_selected->inputs.push_back(
+        std::make_shared<HandsOn::Input>(context.vjs, 0, 0x100, HO_BUTTON));
+    js_selected->inputs.push_back(
+        std::make_shared<HandsOn::Input>(context.vjs, 1, 0x101, HO_BUTTON));
+    js_selected->inputs.push_back(
+        std::make_shared<HandsOn::Input>(context.vjs, 2, 0x102, HO_BUTTON));
+    js_selected->inputs.push_back(
+        std::make_shared<HandsOn::Input>(context.vjs, 3, 0x103, HO_BUTTON));
 }
 
 int init(HandsOn::Context& context) {
     int res = sdl_init();
+    if (res != 0)
+        return res;
+
+    res = init_imgui(context);
     if (res != 0)
         return res;
 
@@ -108,34 +130,38 @@ int main() {
     if (res != 0)
         return res;
 
+    update_joystick_list(context);
+
     context.vjs = std::make_shared<HandsOn::VJoystick>("VJoystick 0", 4, 4);
-    if (!context.vjs->Initialize())
+    if (context.vjs->Initialize() != 0)
         return 2;
 
     if (res != 0)
         return 2;
 
-    context.js_selected.reset(new HandsOn::SDLJoystick(select_joystick()));
-
     setup_binds(context);
 
-    Sint16 bound_axis;
-    bool button = false;
-    do { 
-        SDL_UpdateJoysticks();
+    bool joystick_close = false;
 
-        context.js_selected->Update();
-        for (auto& input : context.js_selected->inputs) {
-            input.second->js_dest->SetAxis(input.second->axis, input.second->value);
+    auto selected = context.js_list[0];
+
+    do {
+        imgui_loop(context);
+
+        context.js_list[0]->Update();
+        for (auto& input : selected->inputs) {
+            for (auto& filter : input->filters)
+                filter(*input);
+            input->js_dest->SetInput(*input);
         }
 
         context.vjs->Update();
-        button = SDL_GetJoystickButton(context.js_selected->js, 5);
+        joystick_close = SDL_GetJoystickButton(((HandsOn::SDLJoystick*)selected.get())->js, 5);
 
         SDL_Delay(1);
-    } while (!button);
+    } while (!context.stopping && !joystick_close);
 
-    SDL_CloseJoystick(context.js_selected->js);
+    SDL_CloseJoystick(((HandsOn::SDLJoystick*)selected.get())->js);
     SDL_Quit();
 
     return 0;

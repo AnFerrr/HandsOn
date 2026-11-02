@@ -1,20 +1,38 @@
 #include "../include/sdl_joystick.hpp"
 
 namespace HandsOn {
+    SDLJoystick::SDLJoystick(std::string name,
+            short naxes,
+            short nbuttons,
+            SDL_Joystick* js)
+        : Joystick(name, naxes, nbuttons), js(js) {};
+
     void SDLJoystick::Update() {
-        int axis;
+        int input_value;
 
         for (auto& input : inputs) {
-            axis = SDL_GetJoystickAxis(this->js, input.first);
-            input.second->value = axis;
+            switch(input->type) {
+                case HO_AXIS:
+                    input_value = SDL_GetJoystickAxis(this->js,
+                            input->src_input);
+                    break;
+                case HO_BUTTON:
+                    input_value = SDL_GetJoystickButton(this->js,
+                            input->src_input);
+                    break;
+                default:
+                    input_value = -42;
+                    break;
+            }
+
+            input->value = input_value;
         }
     };
 
-    void SDLJoystick::SetAxis(int axis, int value) {
+    void SDLJoystick::SetInput(Input& input) {};
 
-    };
-
-    int SDLJoystick::GetAxis(int axis) {
-        return inputs[axis]->value;
+    int SDLJoystick::GetInput(int input) {
+        return -42;
+        //return inputs[input]->value;
     };
 }
