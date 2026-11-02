@@ -4,6 +4,7 @@
 #include "SDL3/SDL_video.h"
 #include <SDL3/SDL_opengl.h>
 #include <iostream>
+#include <string>
 
 int make_window(SDL_Window*& window, SDL_GLContext& gl_context) {
     const char* glsl_version = "#version 130";
@@ -96,20 +97,37 @@ void imgui_loop(HandsOn::Context& context) {
 
     int item_selected_idx = 0;
     auto& js_list = context.js_list;
+    auto& vjs_list = context.vjs_list;
+    bool opened[] = { true, true };
+    std::string button_button_name = "N/A";
     if (ImGui::Begin("Joystick List")) {
-        if (ImGui::BeginCombo("combo 1", js_list[0]->name.c_str()))
-        {
-            for (int n = 0; n < js_list.size(); n++)
-            {
-                const bool is_selected = (item_selected_idx == n);
-                if (ImGui::Selectable(js_list[n]->name.c_str(), is_selected))
-                    item_selected_idx = n;
-
-                if (is_selected)
-                    ImGui::SetItemDefaultFocus();
+        if (ImGui::BeginTabBar("MyTabBar")) {
+            for (auto& js : js_list) {
+                if (ImGui::BeginTabItem(js->name.c_str())) {
+                    for (int i = 0; i < js->nbuttons; i++) {
+                        auto& sdl_js = ((HandsOn::SDLJoystick*)js.get())->js;
+                        bool pressed = SDL_GetJoystickButton(sdl_js, i); 
+                        if (pressed)
+                            ImGui::PushStyleColor(ImGuiCol_Button,
+                                    ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+                        button_button_name = "Button " + std::to_string(i);
+                        ImGui::Button(button_button_name.c_str());
+                        if (pressed)
+                            ImGui::PopStyleColor();
+                    }
+                    ImGui::EndTabItem();
+                }
             }
-            ImGui::EndCombo();
+
+            for (auto& js : vjs_list) {
+                if (ImGui::BeginTabItem(js->name.c_str())) {
+                    ImGui::Text("This is the %s tab!", js->name.c_str());
+                    ImGui::EndTabItem();
+                }
+            }
+            ImGui::EndTabBar();
         }
+
         ImGui::End();
     }
 
