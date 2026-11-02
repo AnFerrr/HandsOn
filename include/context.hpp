@@ -14,7 +14,7 @@ namespace HandsOn {
         SDL_GLContext gl_context;
 
         std::vector<std::shared_ptr<Joystick>> js_list;
-        std::shared_ptr<VJoystick> vjs;
+        std::vector<std::shared_ptr<Joystick>> vjs_list;
 
         std::unordered_map<int, int> key_binds;
         std::unordered_map<int, int> axis_binds;

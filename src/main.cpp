@@ -89,26 +89,28 @@ int sdl_init() {
 
 void setup_binds(HandsOn::Context& context) {
     auto js_selected = context.js_list[0];
+    auto vjs = context.vjs_list[0];
+
     js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(context.vjs, 0, 0, HO_AXIS));
+        std::make_shared<HandsOn::Input>(vjs, 0, 0, HO_AXIS));
     js_selected->inputs[0]->filters.push_back([](HandsOn::Input& input){
         input.value = input.value * -1;
     });
     js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(context.vjs, 1, 1, HO_AXIS));
+        std::make_shared<HandsOn::Input>(vjs, 1, 1, HO_AXIS));
     js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(context.vjs, 2, 2, HO_AXIS));
+        std::make_shared<HandsOn::Input>(vjs, 2, 2, HO_AXIS));
     js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(context.vjs, 3, 3, HO_AXIS));
+        std::make_shared<HandsOn::Input>(vjs, 3, 3, HO_AXIS));
 
     js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(context.vjs, 0, 0x100, HO_BUTTON));
+        std::make_shared<HandsOn::Input>(vjs, 0, 0x100, HO_BUTTON));
     js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(context.vjs, 1, 0x101, HO_BUTTON));
+        std::make_shared<HandsOn::Input>(vjs, 1, 0x101, HO_BUTTON));
     js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(context.vjs, 2, 0x102, HO_BUTTON));
+        std::make_shared<HandsOn::Input>(vjs, 2, 0x102, HO_BUTTON));
     js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(context.vjs, 3, 0x103, HO_BUTTON));
+        std::make_shared<HandsOn::Input>(vjs, 3, 0x103, HO_BUTTON));
 }
 
 int init(HandsOn::Context& context) {
@@ -132,8 +134,8 @@ int main() {
 
     update_joystick_list(context);
 
-    context.vjs = std::make_shared<HandsOn::VJoystick>("VJoystick 0", 4, 4);
-    if (context.vjs->Initialize() != 0)
+    context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("VJoystick 0", 4, 4));
+    if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
         return 2;
 
     if (res != 0)
@@ -144,6 +146,7 @@ int main() {
     bool joystick_close = false;
 
     auto selected = context.js_list[0];
+    auto vjs = context.vjs_list[0];
 
     do {
         imgui_loop(context);
@@ -155,7 +158,7 @@ int main() {
             input->js_dest->SetInput(*input);
         }
 
-        context.vjs->Update();
+        vjs->Update();
         joystick_close = SDL_GetJoystickButton(((HandsOn::SDLJoystick*)selected.get())->js, 5);
 
         SDL_Delay(1);
