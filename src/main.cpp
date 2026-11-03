@@ -169,5 +169,9 @@ int main() {
     SDL_CloseJoystick(((HandsOn::SDLJoystick*)selected.get())->js);
     SDL_Quit();
 
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
+
     return 0;
 }

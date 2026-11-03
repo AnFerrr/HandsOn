@@ -164,6 +164,17 @@ void joystick_tab_list(HandsOn::Context& context) {
                 ImGui::EndTabItem();
             }
         }
+
+        ImGui::TabItemButton("+");
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+            int vjoystick_id = context.vjs_list.size();
+            std::string vjoystick_name = "VJoystick " + std::to_string(vjoystick_id);
+
+            context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>(vjoystick_name, 4, 4));
+            if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
+                throw std::runtime_error("Couldn't create virtual Joystick.");
+        }
+
         ImGui::EndTabBar();
     }
 }
@@ -199,5 +210,4 @@ void imgui_loop(HandsOn::Context& context) {
     }
 
     imgui_frame_end(context);
-
 }
