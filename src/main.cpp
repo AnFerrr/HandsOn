@@ -28,11 +28,13 @@ int update_joystick_list(HandsOn::Context& context) {
                 SDL_GetNumJoystickButtons(joystick),
                 joystick
                 );
-        for (int i = 0; i < SDL_GetNumJoystickAxes(joystick); i++)
-            ho_joystick->axes.push_back(std::make_shared<HandsOn::Input>(nullptr, i, i));
+        int total_input_count = 0;
+        for (int i = 0; i < SDL_GetNumJoystickAxes(joystick); i++, total_input_count++)
+            ho_joystick->inputs.push_back(std::make_shared<HandsOn::Input>(nullptr, i, i, HO_AXIS));
+        for (int i = 0; i < SDL_GetNumJoystickButtons(joystick); i++)
+            ho_joystick->inputs.push_back(std::make_shared<HandsOn::Input>(nullptr, i, i + 0x100, HO_BUTTON));
 
-
-        ho_joystick->axes[0]->filters.push_back([](HandsOn::Input& input){
+        ho_joystick->inputs[0]->filters.push_back([](HandsOn::Input& input){
             input.value = input.value * -1;
             });
         context.js_list.push_back(ho_joystick);
@@ -54,17 +56,6 @@ int sdl_init() {
 }
 
 void setup_binds(HandsOn::Context& context) {
-    auto js_selected = context.js_list[0];
-    auto vjs = context.vjs_list[0];
-
-    js_selected->buttons.push_back(
-            std::make_shared<HandsOn::Input>(vjs, 0, 0x100));
-    js_selected->buttons.push_back(
-            std::make_shared<HandsOn::Input>(vjs, 1, 0x101));
-    js_selected->buttons.push_back(
-            std::make_shared<HandsOn::Input>(vjs, 2, 0x102));
-    js_selected->buttons.push_back(
-            std::make_shared<HandsOn::Input>(vjs, 3, 0x103));
 }
 
 int init(HandsOn::Context& context) {
@@ -111,12 +102,11 @@ int main() {
         imgui_loop(context);
 
         context.js_list[0]->Update();
-        for (int i = 0; i < selected->axes.size(); i++) {
-            auto& input = selected->axes[i];
+        for (auto& input : selected->inputs) {
             for (auto& filter : input->filters)
                 filter(*input);
             if (input->js_dest)
-                input->js_dest->SetAxisInput(*input);
+                input->js_dest->SetInput(*input);
         }
 
         vjs->Update();

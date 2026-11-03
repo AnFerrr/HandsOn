@@ -12,10 +12,10 @@ namespace HandsOn {
             ~VJoystick();
             virtual void Update() override;
             int Initialize();
-            virtual void SetAxisInput(Input& input) override;
-            virtual int GetAxisInput(int input) override;
-            virtual void SetButtonInput(Input& input) override;
-            virtual int GetButtonInput(int input) override;
+            virtual void SetInput(Input& input) override;
+            virtual int GetInput(int input) override;
+            //virtual void SetButtonInput(Input& input) override;
+            //virtual int GetButtonInput(int input) override;
 
         private:
             struct libevdev* evdev;

@@ -16,15 +16,11 @@ namespace HandsOn {
         /* TODO: make into a list of Input and have each input (buttons and
          * axes) be an Input?
          */
-        std::vector<std::shared_ptr<Input>> axes;
-        std::vector<std::shared_ptr<Input>> buttons;
-
+        std::vector<std::shared_ptr<Input>> inputs;
 
         virtual void Update() = 0;
-        virtual void SetAxisInput(Input& input) = 0;
-        virtual int GetAxisInput(int input) = 0;
-        virtual void SetButtonInput(Input& input) = 0;
-        virtual int GetButtonInput(int input) = 0;
+        virtual void SetInput(Input& input) = 0;
+        virtual int GetInput(int input) = 0;
     };
 }
 

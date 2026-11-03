@@ -75,59 +75,40 @@ void imgui_frame_end(HandsOn::Context& context) {
 void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joystick) {
     HandsOn::SDLJoystick* js = (HandsOn::SDLJoystick*)&joystick;
 
-    static auto& selected_input = joystick.axes[0];
+    static auto& selected_input = joystick.inputs[0];
 
     ImGui::BeginChild("Input list",
             ImVec2(ImGui::GetContentRegionAvail().x * 0.2f,
                 ImGui::GetContentRegionAvail().y), ImGuiChildFlags_Borders);
 
     int value = 0;
-    std::string axis_button_name = "N/A";
-    // Lists Axes
-    for (int i = 0; i < joystick.axes.size(); i++) {
-        auto& input = joystick.axes[i];
-        bool active = false;
-
-        value = input->value; 
-        if (value > 300 || value < -300) {
-            ImGui::PushStyleColor(ImGuiCol_Button,
-                    ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
-            active = true;
-        }
-
-        axis_button_name = "Axis " + std::to_string(i);
-        if (ImGui::Button(axis_button_name.c_str()))
-            selected_input = input;
-
-        if (active)
-            ImGui::PopStyleColor();
-    }
-
-    std::string button_button_name = "N/A";
-    // List buttons
-    for (int i = 0; i < joystick.buttons.size(); i++) {
-        auto& input = joystick.buttons[i];
+    std::string button_name = "N/A";
+    for (int i = 0; i < joystick.inputs.size(); i++) {
+        auto& input = joystick.inputs[i];
         bool active = false;
 
         value = input->value;
-        if (value == 1) {
+        if ((input->type == HO_AXIS && (value > 300 || value < -300))
+                || (input->type == HO_BUTTON && (value == 1))) {
             ImGui::PushStyleColor(ImGuiCol_Button,
                     ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
             active = true;
         }
 
-        button_button_name = "Button " + std::to_string(i);
-        if (ImGui::Button(button_button_name.c_str()))
+        button_name = (input->type == HO_AXIS ? "Axis " : "Button ") + std::to_string(i);
+        if (ImGui::Button(button_name.c_str()))
             selected_input = input;
+
         if (active)
             ImGui::PopStyleColor();
     }
+
     ImGui::EndChild();
 
     ImGui::SameLine();
 
     ImGui::BeginChild("Input config");
-    ImGui::Text("%i", selected_input->value);
+    ImGui::Text("Input value: %i", selected_input->value);
 
     static int item_selected_idx = 0;
     auto& vjs_list = context.vjs_list;
