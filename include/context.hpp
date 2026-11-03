@@ -7,9 +7,6 @@
 
 namespace HandsOn {
     struct Context {
-        Context() = default;
-        ~Context() {};
-        
         SDL_Window* window;
         SDL_GLContext gl_context;
 

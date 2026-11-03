@@ -7,8 +7,10 @@ namespace HandsOn {
             short nbuttons) : Joystick(name, naxes, nbuttons) {};
 
     VJoystick::~VJoystick() {
-        libevdev_uinput_destroy(this->uidev);
-        libevdev_free(this->evdev);
+        if (this->uidev) {
+            libevdev_uinput_destroy(this->uidev);
+            this->uidev = nullptr;
+        }
     };
 
     void VJoystick::SetAxisInput(Input& input) {
@@ -67,6 +69,7 @@ namespace HandsOn {
         std::cout << "Device live at: " << libevdev_uinput_get_devnode(uidev) << std::endl;
 
         this->uidev = uidev;
+        libevdev_free(this->evdev);
 
         return 0;
     }

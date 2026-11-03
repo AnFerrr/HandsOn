@@ -20,7 +20,7 @@ namespace HandsOn {
         std::shared_ptr<Joystick> js_dest;
         int src_input;
         int dest_input;
-        int value = 0;
+        int value = -42;
     };
 }
 

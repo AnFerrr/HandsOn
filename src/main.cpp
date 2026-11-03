@@ -29,7 +29,7 @@ int update_joystick_list(HandsOn::Context& context) {
                 joystick
                 );
         for (int i = 0; i < SDL_GetNumJoystickAxes(joystick); i++)
-            ho_joystick->axes.push_back(std::make_shared<HandsOn::Input>(ho_joystick, i, i));
+            ho_joystick->axes.push_back(std::make_shared<HandsOn::Input>(nullptr, i, i));
 
 
         ho_joystick->axes[0]->filters.push_back([](HandsOn::Input& input){
@@ -41,48 +41,6 @@ int update_joystick_list(HandsOn::Context& context) {
     SDL_free(joysticks);
 
     return 0;
-}
-
-SDL_Joystick* select_joystick() {
-    if (!SDL_HasJoystick()) {
-        std::cerr << "No joystick detected" << std::endl;
-        return nullptr;
-    }
-
-    bool js_valid = false;
-    while (!js_valid) {
-        std::cout << "Joystick list: " << std::endl;
-
-        int count = 0;
-        auto joysticks = SDL_GetJoysticks(&count);
-        for (int i = 0; i < count; i++) {
-            std::cout << " id: " << joysticks[i]
-                << " name: " << SDL_GetJoystickNameForID(joysticks[i])
-                << std::endl;
-        }
-
-        std::cout << "Input joystick id: ";
-        std::string user_input;
-        int js_id = 5;
-
-        SDL_JoystickID id;
-        for (int i = 0; i < count; i++) {
-            id = joysticks[i];
-            if (id == js_id) {
-                SDL_free(joysticks);
-                return SDL_OpenJoystick(js_id);
-                break;
-            }
-        }
-
-        if (!js_valid)
-            std::cout << "\n\n"
-                << js_id << " is not a valid joystick id" << std::endl;
-
-        SDL_free(joysticks);
-    }
-
-    return nullptr;
 }
 
 int sdl_init() {
@@ -136,7 +94,7 @@ int main() {
     if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
         return 2;
     context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("VJoystick 1", 4, 4));
-    if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
+    if (((HandsOn::VJoystick*)context.vjs_list[1].get())->Initialize() != 0)
         return 2;
 
     if (res != 0)
@@ -157,7 +115,8 @@ int main() {
             auto& input = selected->axes[i];
             for (auto& filter : input->filters)
                 filter(*input);
-            input->js_dest->SetAxisInput(*input);
+            if (input->js_dest)
+                input->js_dest->SetAxisInput(*input);
         }
 
         vjs->Update();

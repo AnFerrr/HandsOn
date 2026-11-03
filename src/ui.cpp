@@ -79,14 +79,14 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
 
     ImGui::BeginChild("Input list",
             ImVec2(ImGui::GetContentRegionAvail().x * 0.2f,
-                ImGui::GetContentRegionAvail().y));
+                ImGui::GetContentRegionAvail().y), ImGuiChildFlags_Borders);
 
     int value = 0;
     std::string axis_button_name = "N/A";
     // Lists Axes
     for (int i = 0; i < joystick.axes.size(); i++) {
-        bool active = false;
         auto& input = joystick.axes[i];
+        bool active = false;
 
         value = input->value; 
         if (value > 300 || value < -300) {
@@ -129,15 +129,24 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
     ImGui::BeginChild("Input config");
     ImGui::Text("%i", selected_input->value);
 
-    std::string combo_preview_value = context.vjs_list[0]->name;
+    static int item_selected_idx = 0;
     auto& vjs_list = context.vjs_list;
-    int item_selected_idx = 0;
+
+    std::vector<std::string> name_list;
+    name_list.push_back("None");
+    for (auto entry : vjs_list)
+        name_list.push_back(entry->name);
+
+    std::string combo_preview_value = name_list[item_selected_idx];
+
     if (ImGui::BeginCombo("Target selection", combo_preview_value.c_str())) {
-        for (int n = 0; n < vjs_list.size(); n++) {
+        for (int n = 0; n < name_list.size(); n++) {
             const bool is_selected = (item_selected_idx == n);
-            if (ImGui::Selectable(vjs_list[n]->name.c_str(), is_selected))
+            if (ImGui::Selectable(name_list[n].c_str(), is_selected))
                 item_selected_idx = n;
         }
+        selected_input->js_dest = item_selected_idx ?
+            vjs_list[item_selected_idx - 1] : nullptr;
         ImGui::EndCombo();
     }
 
@@ -165,14 +174,14 @@ void joystick_tab_list(HandsOn::Context& context) {
             }
         }
 
-        ImGui::TabItemButton("+");
-        if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        if (ImGui::TabItemButton("+")) {
             int vjoystick_id = context.vjs_list.size();
             std::string vjoystick_name = "VJoystick " + std::to_string(vjoystick_id);
 
             context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>(vjoystick_name, 4, 4));
-            if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
+            if (((HandsOn::VJoystick*)context.vjs_list[vjoystick_id - 1].get())->Initialize() != 0)
                 throw std::runtime_error("Couldn't create virtual Joystick.");
+            std::cout << vjoystick_id << std::endl;
         }
 
         ImGui::EndTabBar();
