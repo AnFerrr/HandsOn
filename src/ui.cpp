@@ -206,7 +206,7 @@ void joystick_tab_list(HandsOn::Context& context) {
             int index = context.vjs_list.size();
             std::string vjoystick_name = "HandsOn Virtual joystick: " + std::to_string(index);
 
-            vjs_list.push_back(std::make_shared<HandsOn::VJoystick>(vjoystick_name, 4, 4));
+            vjs_list.push_back(std::move(std::make_shared<HandsOn::VJoystick>(vjoystick_name, 4, 4)));
             if (((HandsOn::VJoystick*)vjs_list[index].get())->Initialize() != 0)
                 throw std::runtime_error("Couldn't create virtual Joystick.");
         }

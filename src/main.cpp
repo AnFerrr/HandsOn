@@ -66,19 +66,15 @@ int main() {
     if (res != 0)
         return res;
 
-    context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("HandsOn Virtual joystick: 0", 4, 4));
-    if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
-        return 2;
-    context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("HandsOn Virtual joystick: 1", 4, 4));
-    if (((HandsOn::VJoystick*)context.vjs_list[1].get())->Initialize() != 0)
-        return 2;
+    //context.vjs_list.push_back(std::move(std::make_shared<HandsOn::VJoystick>("HandsOn Virtual joystick: 0", 4, 4)));
+    //if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
+    //    return 2;
+    //context.vjs_list.push_back(std::move(std::make_shared<HandsOn::VJoystick>("HandsOn Virtual joystick: 1", 4, 4)));
+    //if (((HandsOn::VJoystick*)context.vjs_list[1].get())->Initialize() != 0)
+    //    return 2;
 
     if (res != 0)
         return 2;
-
-    bool joystick_close = false;
-
-    auto vjs = context.vjs_list[0];
 
     do {
         SDL_Event event;
@@ -100,7 +96,7 @@ int main() {
                         context.js_list.erase(context.js_list.begin() + i);
                     }
                 }
-            }else if (event.type == SDL_EVENT_JOYSTICK_ADDED) {
+            } else if (event.type == SDL_EVENT_JOYSTICK_ADDED) {
                 auto new_joystick = SDL_OpenJoystick(event.gdevice.which);
                 std::string name = SDL_GetJoystickName(new_joystick);
                 if (name.rfind("HandsOn Virtual joystick: ", 0) != 0) {
@@ -131,10 +127,12 @@ int main() {
             }
         }
 
-        vjs->Update();
+        auto& vjs_list = context.vjs_list;
+        for (auto& vjs : vjs_list)
+            vjs->Update();
 
         SDL_Delay(1);
-    } while (!context.stopping && !joystick_close);
+    } while (!context.stopping);
 
     SDL_Quit();
 
