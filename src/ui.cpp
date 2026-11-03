@@ -134,7 +134,7 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
 
     std::string combo_preview_value = name_list[item_selected_idx];
 
-    if (ImGui::BeginCombo("Target selection", combo_preview_value.c_str())) {
+    if (ImGui::BeginCombo("Target virtual joystick selection", combo_preview_value.c_str())) {
         for (int n = 0; n < name_list.size(); n++) {
             const bool is_selected = (item_selected_idx == n);
             if (ImGui::Selectable(name_list[n].c_str(), is_selected))
@@ -143,6 +143,35 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
         selected_input->js_dest = item_selected_idx ?
             vjs_list[item_selected_idx - 1] : nullptr;
         ImGui::EndCombo();
+    }
+
+    if (selected_input->js_dest) {
+        int input_size =
+            selected_input->js_dest->naxes + selected_input->js_dest->nbuttons;
+
+        name_list.clear();
+        name_list.push_back("None");
+        std::string name = "N/A";
+        for (int i = 0; i < input_size; i++) {
+            int name_id = (i < selected_input->js_dest->naxes) ? 
+                i : i - selected_input->js_dest->naxes;
+            name = ((i < selected_input->js_dest->naxes)
+                ? "Axis " : "Button ") + std::to_string(name_id);
+            name_list.push_back(name);
+        }
+        static int item_selected_idx_input = 0;
+        combo_preview_value = name_list[item_selected_idx_input];
+
+        if (ImGui::BeginCombo("Target virtual input selection", combo_preview_value.c_str())) {
+            for (int n = 0; n < name_list.size(); n++) {
+                const bool is_selected = (item_selected_idx == n);
+                if (ImGui::Selectable(name_list[n].c_str(), is_selected)) {
+                    selected_input->dest_input = n - 1;
+                    item_selected_idx_input = n;
+                }
+            }
+            ImGui::EndCombo();
+        }
     }
 
     ImGui::EndChild();
