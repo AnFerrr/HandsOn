@@ -4,11 +4,9 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include <string>
 #include "libevdev-1.0/libevdev/libevdev.h"
 #include <libevdev-1.0/libevdev/libevdev-uinput.h>
-
-#define HO_AXIS EV_ABS
-#define HO_BUTTON EV_KEY
 
 namespace HandsOn {
     struct Joystick;
@@ -16,15 +14,13 @@ namespace HandsOn {
     struct Input {
         Input(std::shared_ptr<Joystick> js_dest,
                 int src_input,
-                int dest_input,
-                int type);
+                int dest_input);
 
         std::vector<std::function<void(Input& input)>> filters;
         std::shared_ptr<Joystick> js_dest;
         int src_input;
         int dest_input;
         int value = 0;
-        int type;
     };
 }
 

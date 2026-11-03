@@ -72,6 +72,102 @@ void imgui_frame_end(HandsOn::Context& context) {
     SDL_GL_SwapWindow(context.window);
 }
 
+void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joystick) {
+    HandsOn::SDLJoystick* js = (HandsOn::SDLJoystick*)&joystick;
+
+    static auto& selected_input = joystick.axes[0];
+
+    ImGui::BeginChild("Input list",
+            ImVec2(ImGui::GetContentRegionAvail().x * 0.2f,
+                ImGui::GetContentRegionAvail().y));
+
+    int value = 0;
+    std::string axis_button_name = "N/A";
+    // Lists Axes
+    for (int i = 0; i < joystick.axes.size(); i++) {
+        bool active = false;
+        auto& input = joystick.axes[i];
+
+        value = input->value; 
+        if (value > 300 || value < -300) {
+            ImGui::PushStyleColor(ImGuiCol_Button,
+                    ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+            active = true;
+        }
+
+        axis_button_name = "Axis " + std::to_string(i);
+        if (ImGui::Button(axis_button_name.c_str()))
+            selected_input = input;
+
+        if (active)
+            ImGui::PopStyleColor();
+    }
+
+    std::string button_button_name = "N/A";
+    // List buttons
+    for (int i = 0; i < joystick.buttons.size(); i++) {
+        auto& input = joystick.buttons[i];
+        bool active = false;
+
+        value = input->value;
+        if (value == 1) {
+            ImGui::PushStyleColor(ImGuiCol_Button,
+                    ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+            active = true;
+        }
+
+        button_button_name = "Button " + std::to_string(i);
+        if (ImGui::Button(button_button_name.c_str()))
+            selected_input = input;
+        if (active)
+            ImGui::PopStyleColor();
+    }
+    ImGui::EndChild();
+
+    ImGui::SameLine();
+
+    ImGui::BeginChild("Input config");
+    ImGui::Text("%i", selected_input->value);
+
+    std::string combo_preview_value = context.vjs_list[0]->name;
+    auto& vjs_list = context.vjs_list;
+    int item_selected_idx = 0;
+    if (ImGui::BeginCombo("Target selection", combo_preview_value.c_str())) {
+        for (int n = 0; n < vjs_list.size(); n++) {
+            const bool is_selected = (item_selected_idx == n);
+            if (ImGui::Selectable(vjs_list[n]->name.c_str(), is_selected))
+                item_selected_idx = n;
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::EndChild();
+}
+
+void joystick_tab_list(HandsOn::Context& context) {
+    int item_selected_idx = 0;
+    auto& js_list = context.js_list;
+    auto& vjs_list = context.vjs_list;
+    bool opened[] = { true, true };
+
+    if (ImGui::BeginTabBar("MyTabBar")) {
+        for (auto& js : js_list) {
+            if (ImGui::BeginTabItem(js->name.c_str())) {
+                sdljoystick_ui_content(context, *js.get());
+                ImGui::EndTabItem();
+            }
+        }
+
+        for (auto& js : vjs_list) {
+            if (ImGui::BeginTabItem(js->name.c_str())) {
+                ImGui::Text("This is the %s tab!", js->name.c_str());
+                ImGui::EndTabItem();
+            }
+        }
+        ImGui::EndTabBar();
+    }
+}
+
 void imgui_loop(HandsOn::Context& context) {
     static bool show_demo_window = true;
     ImGuiIO io;
@@ -92,41 +188,12 @@ void imgui_loop(HandsOn::Context& context) {
 
     ImGui::DockSpaceOverViewport();
 
-    if (show_demo_window)
-        ImGui::ShowDemoWindow(&show_demo_window);
+    //if (show_demo_window)
+    //    ImGui::ShowDemoWindow(&show_demo_window);
 
-    int item_selected_idx = 0;
-    auto& js_list = context.js_list;
-    auto& vjs_list = context.vjs_list;
-    bool opened[] = { true, true };
-    std::string button_button_name = "N/A";
+    bool opened = true;
     if (ImGui::Begin("Joystick List")) {
-        if (ImGui::BeginTabBar("MyTabBar")) {
-            for (auto& js : js_list) {
-                if (ImGui::BeginTabItem(js->name.c_str())) {
-                    for (int i = 0; i < js->nbuttons; i++) {
-                        auto& sdl_js = ((HandsOn::SDLJoystick*)js.get())->js;
-                        bool pressed = SDL_GetJoystickButton(sdl_js, i); 
-                        if (pressed)
-                            ImGui::PushStyleColor(ImGuiCol_Button,
-                                    ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
-                        button_button_name = "Button " + std::to_string(i);
-                        ImGui::Button(button_button_name.c_str());
-                        if (pressed)
-                            ImGui::PopStyleColor();
-                    }
-                    ImGui::EndTabItem();
-                }
-            }
-
-            for (auto& js : vjs_list) {
-                if (ImGui::BeginTabItem(js->name.c_str())) {
-                    ImGui::Text("This is the %s tab!", js->name.c_str());
-                    ImGui::EndTabItem();
-                }
-            }
-            ImGui::EndTabBar();
-        }
+        joystick_tab_list(context);
 
         ImGui::End();
     }

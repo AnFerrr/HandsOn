@@ -1,38 +1,36 @@
 #include "../include/sdl_joystick.hpp"
+#include <stdexcept>
 
 namespace HandsOn {
-    SDLJoystick::SDLJoystick(std::string name,
-            short naxes,
-            short nbuttons,
-            SDL_Joystick* js)
+    SDLJoystick::SDLJoystick(std::string name, short naxes, short nbuttons,
+            SDL_Joystick *js)
         : Joystick(name, naxes, nbuttons), js(js) {};
 
     void SDLJoystick::Update() {
         int input_value;
 
-        for (auto& input : inputs) {
-            switch(input->type) {
-                case HO_AXIS:
-                    input_value = SDL_GetJoystickAxis(this->js,
-                            input->src_input);
-                    break;
-                case HO_BUTTON:
-                    input_value = SDL_GetJoystickButton(this->js,
-                            input->src_input);
-                    break;
-                default:
-                    input_value = -42;
-                    break;
-            }
+        for (auto& axis : this->axes)
+            axis->value = SDL_GetJoystickAxis(this->js, axis->src_input);
+        for (auto& button : this->buttons)
+            button->value = SDL_GetJoystickButton(this->js, button->src_input);
 
-            input->value = input_value;
-        }
     };
 
-    void SDLJoystick::SetInput(Input& input) {};
+    void SDLJoystick::SetAxisInput(Input &input) {};
 
-    int SDLJoystick::GetInput(int input) {
-        return -42;
-        //return inputs[input]->value;
+    int SDLJoystick::GetAxisInput(int input) {
+        if (input < axes.size())
+            return axes[input]->value;
+        else
+            throw(std::runtime_error("Selected axis doesn't exist."));
     };
-}
+
+    void SDLJoystick::SetButtonInput(Input &input) {};
+
+    int SDLJoystick::GetButtonInput(int input) {
+        if (input < axes.size())
+            return buttons[input]->value;
+        else
+            throw(std::runtime_error("Selected axis doesn't exist."));
+    };
+} // namespace HandsOn

@@ -13,8 +13,10 @@ namespace HandsOn {
                 short nbuttons,
                 SDL_Joystick* js);
         virtual void Update() override;
-        virtual void SetInput(Input& input) override;
-        virtual int GetInput(int input) override;
+        virtual int GetAxisInput(int input) override;
+        virtual void SetAxisInput(Input& input) override;
+        virtual int GetButtonInput(int input) override;
+        virtual void SetButtonInput(Input& input) override;
 
         SDL_JoystickID js_id;
         SDL_Joystick* js;

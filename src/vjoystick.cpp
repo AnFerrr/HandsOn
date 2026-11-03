@@ -11,15 +11,25 @@ namespace HandsOn {
         libevdev_free(this->evdev);
     };
 
-    void VJoystick::SetInput(Input& input) {
+    void VJoystick::SetAxisInput(Input& input) {
         libevdev_uinput_write_event(
                 this->uidev,
-                input.type,
+                EV_ABS,
                 input.dest_input,
                 input.value);
     };
+    int VJoystick::GetAxisInput(int input) {
+        return 0;
+    };
 
-    int VJoystick::GetInput(int input) {
+    void VJoystick::SetButtonInput(Input& input) {
+        libevdev_uinput_write_event(
+                this->uidev,
+                EV_KEY,
+                input.dest_input,
+                input.value);
+    };
+    int VJoystick::GetButtonInput(int input) {
         return 0;
     };
 

@@ -22,12 +22,20 @@ int update_joystick_list(HandsOn::Context& context) {
     for (int i = 0; i < count; i++) {
         SDL_Joystick* joystick = SDL_OpenJoystick(joysticks[i]);
         std::string name = SDL_GetJoystickName(joystick);
-        context.js_list.push_back(std::make_shared<HandsOn::SDLJoystick>(
+        auto ho_joystick = std::make_shared<HandsOn::SDLJoystick>(
                 name,
                 SDL_GetNumJoystickAxes(joystick),
                 SDL_GetNumJoystickButtons(joystick),
                 joystick
-                ));
+                );
+        for (int i = 0; i < SDL_GetNumJoystickAxes(joystick); i++)
+            ho_joystick->axes.push_back(std::make_shared<HandsOn::Input>(ho_joystick, i, i));
+
+
+        ho_joystick->axes[0]->filters.push_back([](HandsOn::Input& input){
+            input.value = input.value * -1;
+            });
+        context.js_list.push_back(ho_joystick);
     }
 
     SDL_free(joysticks);
@@ -91,26 +99,14 @@ void setup_binds(HandsOn::Context& context) {
     auto js_selected = context.js_list[0];
     auto vjs = context.vjs_list[0];
 
-    js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(vjs, 0, 0, HO_AXIS));
-    js_selected->inputs[0]->filters.push_back([](HandsOn::Input& input){
-        input.value = input.value * -1;
-    });
-    js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(vjs, 1, 1, HO_AXIS));
-    js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(vjs, 2, 2, HO_AXIS));
-    js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(vjs, 3, 3, HO_AXIS));
-
-    js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(vjs, 0, 0x100, HO_BUTTON));
-    js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(vjs, 1, 0x101, HO_BUTTON));
-    js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(vjs, 2, 0x102, HO_BUTTON));
-    js_selected->inputs.push_back(
-        std::make_shared<HandsOn::Input>(vjs, 3, 0x103, HO_BUTTON));
+    js_selected->buttons.push_back(
+            std::make_shared<HandsOn::Input>(vjs, 0, 0x100));
+    js_selected->buttons.push_back(
+            std::make_shared<HandsOn::Input>(vjs, 1, 0x101));
+    js_selected->buttons.push_back(
+            std::make_shared<HandsOn::Input>(vjs, 2, 0x102));
+    js_selected->buttons.push_back(
+            std::make_shared<HandsOn::Input>(vjs, 3, 0x103));
 }
 
 int init(HandsOn::Context& context) {
@@ -132,9 +128,14 @@ int main() {
     if (res != 0)
         return res;
 
+    // TODO: make this shit dynamic when adding or removing devices.
+    // TODO: Fix crash when disconnecting device before shuting the program down.
     update_joystick_list(context);
 
     context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("VJoystick 0", 4, 4));
+    if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
+        return 2;
+    context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("VJoystick 1", 4, 4));
     if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
         return 2;
 
@@ -152,10 +153,11 @@ int main() {
         imgui_loop(context);
 
         context.js_list[0]->Update();
-        for (auto& input : selected->inputs) {
+        for (int i = 0; i < selected->axes.size(); i++) {
+            auto& input = selected->axes[i];
             for (auto& filter : input->filters)
                 filter(*input);
-            input->js_dest->SetInput(*input);
+            input->js_dest->SetAxisInput(*input);
         }
 
         vjs->Update();
