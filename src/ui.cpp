@@ -174,14 +174,12 @@ void joystick_tab_list(HandsOn::Context& context) {
         }
 
         if (ImGui::TabItemButton("+")) {
-            int vjoystick_id = context.vjs_list.size();
-            std::string vjoystick_name = "VJoystick " + std::to_string(vjoystick_id);
-            int index = vjoystick_id - (vjoystick_id ? 1 : 0);
+            int index = context.vjs_list.size();
+            std::string vjoystick_name = "HandsOn Virtual joystick: " + std::to_string(index);
 
-            context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>(vjoystick_name, 4, 4));
-            if (((HandsOn::VJoystick*)context.vjs_list[index].get())->Initialize() != 0)
+            vjs_list.push_back(std::make_shared<HandsOn::VJoystick>(vjoystick_name, 4, 4));
+            if (((HandsOn::VJoystick*)vjs_list[index].get())->Initialize() != 0)
                 throw std::runtime_error("Couldn't create virtual Joystick.");
-            std::cout << vjoystick_id << std::endl;
         }
 
         ImGui::EndTabBar();

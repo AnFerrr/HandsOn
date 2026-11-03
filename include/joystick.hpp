@@ -14,6 +14,7 @@ namespace HandsOn {
         short naxes = 4;
         short nbuttons = 30;
         std::vector<std::shared_ptr<Input>> inputs;
+        bool is_virtual = false;
 
         virtual void Update() = 0;
         virtual void SetInput(Input& input) = 0;

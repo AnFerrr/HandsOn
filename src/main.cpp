@@ -66,10 +66,10 @@ int main() {
     if (res != 0)
         return res;
 
-    context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("VJoystick 0", 4, 4));
+    context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("HandsOn Virtual joystick: 0", 4, 4));
     if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
         return 2;
-    context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("VJoystick 1", 4, 4));
+    context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>("HandsOn Virtual joystick: 1", 4, 4));
     if (((HandsOn::VJoystick*)context.vjs_list[1].get())->Initialize() != 0)
         return 2;
 
@@ -103,17 +103,19 @@ int main() {
             }else if (event.type == SDL_EVENT_JOYSTICK_ADDED) {
                 auto new_joystick = SDL_OpenJoystick(event.gdevice.which);
                 std::string name = SDL_GetJoystickName(new_joystick);
-                auto ho_joystick = std::make_shared<HandsOn::SDLJoystick>(
-                        name,
-                        SDL_GetNumJoystickAxes(new_joystick),
-                        SDL_GetNumJoystickButtons(new_joystick),
-                        new_joystick
-                        );
+                if (name.rfind("HandsOn Virtual joystick: ", 0) != 0) {
+                    auto ho_joystick = std::make_shared<HandsOn::SDLJoystick>(
+                            name,
+                            SDL_GetNumJoystickAxes(new_joystick),
+                            SDL_GetNumJoystickButtons(new_joystick),
+                            new_joystick
+                            );
 
-                context.js_list.push_back(ho_joystick);
-                context.js_list[0]->inputs[0]->filters.push_back([](HandsOn::Input& input){
-                        input.value = input.value * -1;
-                        });
+                    context.js_list.push_back(ho_joystick);
+                    context.js_list[0]->inputs[0]->filters.push_back([](HandsOn::Input& input){
+                            input.value = input.value * -1;
+                            });
+                }
             }
 
         }

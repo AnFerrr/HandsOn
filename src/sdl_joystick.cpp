@@ -5,6 +5,8 @@ namespace HandsOn {
     SDLJoystick::SDLJoystick(std::string name, short naxes, short nbuttons,
             SDL_Joystick *js)
         : Joystick(name, naxes, nbuttons), js(js) {
+            is_virtual = false;
+
             int total_input_count = 0;
             for (int i = 0; i < naxes; i++)
                 this->inputs.push_back(std::make_shared<HandsOn::Input>(nullptr, i, i, HO_AXIS));

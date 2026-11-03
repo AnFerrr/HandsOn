@@ -4,7 +4,9 @@
 namespace HandsOn {
     VJoystick::VJoystick(std::string name,
             short naxes,
-            short nbuttons) : Joystick(name, naxes, nbuttons) {};
+            short nbuttons) : Joystick(name, naxes, nbuttons) {
+        is_virtual = true;
+    };
 
     VJoystick::~VJoystick() {
         if (this->uidev) {
