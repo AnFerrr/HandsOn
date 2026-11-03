@@ -3,6 +3,7 @@
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_video.h"
 #include <SDL3/SDL_opengl.h>
+#include <algorithm>
 #include <iostream>
 #include <string>
 
@@ -112,13 +113,24 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
     ImGui::BeginChild("Input config");
     ImGui::Text("Input value: %i", selected_input->value);
 
-    static int item_selected_idx = 0;
     auto& vjs_list = context.vjs_list;
 
     std::vector<std::string> name_list;
     name_list.push_back("None");
     for (auto entry : vjs_list)
         name_list.push_back(entry->name);
+    static int item_selected_idx = 0;
+
+    if (selected_input->js_dest) {
+        auto it = std::find_if(vjs_list.begin(), vjs_list.end(), [&](const auto& vjs_item) {
+                return selected_input->js_dest->name == vjs_item->name;
+                });
+
+        if (it != vjs_list.end()) 
+        {
+            item_selected_idx = std::distance(vjs_list.begin(), it) + 1;
+        }
+    }
 
     std::string combo_preview_value = name_list[item_selected_idx];
 
@@ -143,7 +155,7 @@ void joystick_tab_list(HandsOn::Context& context) {
     bool opened[] = { true, true };
 
     if (ImGui::BeginTabBar("MyTabBar")) {
-        for (auto& js : js_list) {
+        for (auto js : js_list) {
             if (ImGui::BeginTabItem(js->name.c_str())) {
                 sdljoystick_ui_content(context, *js.get());
                 ImGui::EndTabItem();
@@ -151,7 +163,7 @@ void joystick_tab_list(HandsOn::Context& context) {
         }
 
         for (int i = 0; i < vjs_list.size(); i++) {
-            auto& js = vjs_list[i];
+            auto js = vjs_list[i];
             bool result = ImGui::BeginTabItem(js->name.c_str());
             if (ImGui::IsItemClicked(2))
                 vjs_list.erase(vjs_list.begin() + i);
@@ -186,10 +198,10 @@ void imgui_loop(HandsOn::Context& context) {
 
     ImGui::DockSpaceOverViewport();
 
-    //if (show_demo_window)
-    //    ImGui::ShowDemoWindow(&show_demo_window);
-
     bool opened = true;
+    if (ImGui::Button("Test")) {
+        context.js_list[0]->inputs[0]->js_dest = context.vjs_list[0];
+    }
     if (ImGui::Begin("Joystick List")) {
         joystick_tab_list(context);
 

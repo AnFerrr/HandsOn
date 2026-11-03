@@ -47,9 +47,6 @@ int sdl_init() {
     return 0;
 }
 
-void setup_binds(HandsOn::Context& context) {
-}
-
 int init(HandsOn::Context& context) {
     int res = sdl_init();
     if (res != 0)
@@ -78,8 +75,6 @@ int main() {
 
     if (res != 0)
         return 2;
-
-    setup_binds(context);
 
     bool joystick_close = false;
 

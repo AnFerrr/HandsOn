@@ -13,9 +13,6 @@ namespace HandsOn {
         std::string name = "N/A";
         short naxes = 4;
         short nbuttons = 30;
-        /* TODO: make into a list of Input and have each input (buttons and
-         * axes) be an Input?
-         */
         std::vector<std::shared_ptr<Input>> inputs;
 
         virtual void Update() = 0;
