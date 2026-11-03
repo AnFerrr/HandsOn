@@ -75,7 +75,7 @@ void imgui_frame_end(HandsOn::Context& context) {
 void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joystick) {
     HandsOn::SDLJoystick* js = (HandsOn::SDLJoystick*)&joystick;
 
-    static auto& selected_input = joystick.inputs[0];
+    static auto selected_input = joystick.inputs[0];
 
     ImGui::BeginChild("Input list",
             ImVec2(ImGui::GetContentRegionAvail().x * 0.2f,
@@ -95,7 +95,9 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
             active = true;
         }
 
-        button_name = (input->type == HO_AXIS ? "Axis " : "Button ") + std::to_string(i);
+        bool is_axis = input->type == HO_AXIS;
+        int index = i + 1 - (is_axis ? 0 : joystick.naxes);
+        button_name = (is_axis? "Axis " : "Button ") + std::to_string(index);
         if (ImGui::Button(button_name.c_str()))
             selected_input = input;
 
@@ -148,8 +150,12 @@ void joystick_tab_list(HandsOn::Context& context) {
             }
         }
 
-        for (auto& js : vjs_list) {
-            if (ImGui::BeginTabItem(js->name.c_str())) {
+        for (int i = 0; i < vjs_list.size(); i++) {
+            auto& js = vjs_list[i];
+            bool result = ImGui::BeginTabItem(js->name.c_str());
+            if (ImGui::IsItemClicked(2))
+                vjs_list.erase(vjs_list.begin() + i);
+            if (result) {
                 ImGui::Text("This is the %s tab!", js->name.c_str());
                 ImGui::EndTabItem();
             }
@@ -158,9 +164,10 @@ void joystick_tab_list(HandsOn::Context& context) {
         if (ImGui::TabItemButton("+")) {
             int vjoystick_id = context.vjs_list.size();
             std::string vjoystick_name = "VJoystick " + std::to_string(vjoystick_id);
+            int index = vjoystick_id - (vjoystick_id ? 1 : 0);
 
             context.vjs_list.push_back(std::make_shared<HandsOn::VJoystick>(vjoystick_name, 4, 4));
-            if (((HandsOn::VJoystick*)context.vjs_list[vjoystick_id - 1].get())->Initialize() != 0)
+            if (((HandsOn::VJoystick*)context.vjs_list[index].get())->Initialize() != 0)
                 throw std::runtime_error("Couldn't create virtual Joystick.");
             std::cout << vjoystick_id << std::endl;
         }
@@ -174,16 +181,6 @@ void imgui_loop(HandsOn::Context& context) {
     ImGuiIO io;
 
     io = ImGui::GetIO();
-    SDL_Event event;
-    while (SDL_PollEvent(&event))
-    {
-        ImGui_ImplSDL3_ProcessEvent(&event);
-        if (event.type == SDL_EVENT_QUIT)
-            context.stopping = true;
-        if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
-                event.window.windowID == SDL_GetWindowID(context.window))
-            context.stopping = true;
-    }
 
     imgui_frame_init();
 
