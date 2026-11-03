@@ -26,6 +26,8 @@ namespace HandsOn {
         return 0;
     };
 
+    // TODO: fix bug where too many joysticks are created.
+    // TODO: fix bug where buttons are not transmited
     int VJoystick::Initialize() {
         int err;
 
