@@ -177,7 +177,7 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
         if (ImGui::BeginCombo("Target virtual input selection", combo_preview_value.c_str())) {
             for (int n = 0; n < name_list.size(); n++) {
                 is_axis = n < naxes;
-                const bool is_selected = (selected_vjs_id == n);
+                const bool is_selected = (item_selected_idx_input == n);
                 if (ImGui::Selectable(name_list[n].c_str(), is_selected)) {
                     selected_input->dest_input = is_axis ? n - 1 : n - 1 - naxes;
                     selected_input->dest_type = is_axis ? HO_AXIS : HO_BUTTON;
