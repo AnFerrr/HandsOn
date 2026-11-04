@@ -18,15 +18,15 @@ namespace HandsOn {
     void VJoystick::SetInput(Input& input) {
         libevdev_uinput_write_event(
                 this->uidev,
-                input.type,
-                input.dest_input,
+                input.dest_type,
+                (input.dest_type == HO_BUTTON
+                 ? input.dest_input + 0x100 : input.dest_input),
                 input.value);
     };
     int VJoystick::GetInput(int input) {
         return 0;
     };
 
-    // TODO: fix bug where buttons are not transmited
     int VJoystick::Initialize() {
         int err;
 

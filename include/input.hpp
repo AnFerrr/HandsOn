@@ -26,6 +26,7 @@ namespace HandsOn {
         int dest_input;
         int value = -42;
         int type = -1;
+        int dest_type = -1;
     };
 }
 

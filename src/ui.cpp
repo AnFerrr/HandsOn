@@ -73,11 +73,10 @@ void imgui_frame_end(HandsOn::Context& context) {
     SDL_GL_SwapWindow(context.window);
 }
 
-void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joystick) {
-    HandsOn::SDLJoystick* js = (HandsOn::SDLJoystick*)&joystick;
-
-    static auto selected_input = joystick.inputs[0];
-
+void left_panel(
+        HandsOn::Context& context,
+        HandsOn::UIContext& ui_context,
+        HandsOn::Joystick& joystick) {
     ImGui::BeginChild("Input list",
             ImVec2(ImGui::GetContentRegionAvail().x * 0.2f,
                 ImGui::GetContentRegionAvail().y), ImGuiChildFlags_Borders);
@@ -85,32 +84,41 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
     int value = 0;
     std::string button_name = "N/A";
     for (int i = 0; i < joystick.inputs.size(); i++) {
-        auto& input = joystick.inputs[i];
+        auto input = joystick.inputs[i];
         bool active = false;
+        bool is_axis = input->type == HO_AXIS;
 
         value = input->value;
-        if ((input->type == HO_AXIS && (value > 300 || value < -300))
-                || (input->type == HO_BUTTON && (value == 1))) {
+        if ((is_axis && (value > 300 || value < -300))
+                || (!is_axis && (value == 1))) {
             ImGui::PushStyleColor(ImGuiCol_Button,
-                    ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+                    ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
             active = true;
         }
 
-        bool is_axis = input->type == HO_AXIS;
         int index = i + 1 - (is_axis ? 0 : joystick.naxes);
-        button_name = (is_axis? "Axis " : "Button ") + std::to_string(index);
+        button_name = (is_axis ? "Axis " : "Button ") + std::to_string(index);
         if (ImGui::Button(button_name.c_str()))
-            selected_input = input;
+            ui_context.selected_input = input;
 
         if (active)
             ImGui::PopStyleColor();
     }
 
     ImGui::EndChild();
+}
 
-    ImGui::SameLine();
+void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
+    HandsOn::Input* selected_input = ui_context.selected_input.get();
+    if (!selected_input)
+        return;
+
+    bool is_axis = selected_input->type;
+    int input_id = selected_input->src_input;
 
     ImGui::BeginChild("Input config");
+    ImGui::PushFont(NULL, 24.0f);
+    ImGui::PopFont();
     ImGui::Text("Input value: %i", selected_input->value);
 
     auto& vjs_list = context.vjs_list;
@@ -119,44 +127,48 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
     name_list.push_back("None");
     for (auto entry : vjs_list)
         name_list.push_back(entry->name);
-    static int item_selected_idx = 0;
+    static int selected_vjs_id = 0;
 
-    if (selected_input->js_dest) {
+    if (selected_input && selected_input->js_dest) {
         auto it = std::find_if(vjs_list.begin(), vjs_list.end(), [&](const auto& vjs_item) {
                 return selected_input->js_dest->name == vjs_item->name;
                 });
 
         if (it != vjs_list.end()) 
         {
-            item_selected_idx = std::distance(vjs_list.begin(), it) + 1;
+            selected_vjs_id = std::distance(vjs_list.begin(), it) + 1;
         }
     }
 
-    std::string combo_preview_value = name_list[item_selected_idx];
+    std::string combo_preview_value = name_list[selected_vjs_id];
 
     if (ImGui::BeginCombo("Target virtual joystick selection", combo_preview_value.c_str())) {
         for (int n = 0; n < name_list.size(); n++) {
-            const bool is_selected = (item_selected_idx == n);
+            const bool is_selected = (selected_vjs_id == n);
             if (ImGui::Selectable(name_list[n].c_str(), is_selected))
-                item_selected_idx = n;
+                selected_vjs_id = n;
         }
-        selected_input->js_dest = item_selected_idx ?
-            vjs_list[item_selected_idx - 1] : nullptr;
+        selected_input->js_dest = selected_vjs_id ?
+            vjs_list[selected_vjs_id - 1] : nullptr;
         ImGui::EndCombo();
     }
 
-    if (selected_input->js_dest) {
-        int input_size =
-            selected_input->js_dest->naxes + selected_input->js_dest->nbuttons;
+    if (selected_input && selected_input->js_dest) {
+        int naxes = selected_input->js_dest->naxes;
+        int nbuttons = selected_input->js_dest->nbuttons;
+        int input_size = naxes + nbuttons;
+
+        bool is_axis = false;
 
         name_list.clear();
         name_list.push_back("None");
+
         std::string name = "N/A";
+
         for (int i = 0; i < input_size; i++) {
-            int name_id = (i < selected_input->js_dest->naxes) ? 
-                i : i - selected_input->js_dest->naxes;
-            name = ((i < selected_input->js_dest->naxes)
-                ? "Axis " : "Button ") + std::to_string(name_id);
+            is_axis = i < naxes;
+            int name_id = (is_axis) ? i : i - naxes;
+            name = ((is_axis) ? "Axis " : "Button ") + std::to_string(name_id + 1);
             name_list.push_back(name);
         }
         static int item_selected_idx_input = 0;
@@ -164,9 +176,11 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
 
         if (ImGui::BeginCombo("Target virtual input selection", combo_preview_value.c_str())) {
             for (int n = 0; n < name_list.size(); n++) {
-                const bool is_selected = (item_selected_idx == n);
+                is_axis = n < naxes;
+                const bool is_selected = (selected_vjs_id == n);
                 if (ImGui::Selectable(name_list[n].c_str(), is_selected)) {
-                    selected_input->dest_input = n - 1;
+                    selected_input->dest_input = is_axis ? n - 1 : n - 1 - naxes;
+                    selected_input->dest_type = is_axis ? HO_AXIS : HO_BUTTON;
                     item_selected_idx_input = n;
                 }
             }
@@ -177,7 +191,21 @@ void sdljoystick_ui_content(HandsOn::Context& context, HandsOn::Joystick& joysti
     ImGui::EndChild();
 }
 
-void joystick_tab_list(HandsOn::Context& context) {
+// TODO: Fix crash when removing a boud vjoystick
+void sdljoystick_ui_content(
+        HandsOn::Context& context,
+        HandsOn::UIContext& ui_context,
+        HandsOn::Joystick& joystick) {
+    HandsOn::SDLJoystick* js = (HandsOn::SDLJoystick*)&joystick;
+
+    left_panel(context, ui_context, *js);
+
+    ImGui::SameLine();
+
+    right_panel(context, ui_context);
+}
+
+void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     int item_selected_idx = 0;
     auto& js_list = context.js_list;
     auto& vjs_list = context.vjs_list;
@@ -186,7 +214,7 @@ void joystick_tab_list(HandsOn::Context& context) {
     if (ImGui::BeginTabBar("MyTabBar")) {
         for (auto js : js_list) {
             if (ImGui::BeginTabItem(js->name.c_str())) {
-                sdljoystick_ui_content(context, *js.get());
+                sdljoystick_ui_content(context, ui_context, *js.get());
                 ImGui::EndTabItem();
             }
         }
@@ -215,7 +243,7 @@ void joystick_tab_list(HandsOn::Context& context) {
     }
 }
 
-void imgui_loop(HandsOn::Context& context) {
+void imgui_loop(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     static bool show_demo_window = true;
     ImGuiIO io;
 
@@ -230,7 +258,7 @@ void imgui_loop(HandsOn::Context& context) {
         context.js_list[0]->inputs[0]->js_dest = context.vjs_list[0];
     }
     if (ImGui::Begin("Joystick List")) {
-        joystick_tab_list(context);
+        joystick_tab_list(context, ui_context);
 
         ImGui::End();
     }

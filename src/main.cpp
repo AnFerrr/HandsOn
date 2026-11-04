@@ -76,6 +76,8 @@ int main() {
     if (res != 0)
         return 2;
 
+    HandsOn::UIContext ui_context;
+
     do {
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -115,7 +117,7 @@ int main() {
             }
 
         }
-        imgui_loop(context);
+        imgui_loop(context, ui_context);
 
         for (auto& joystick : context.js_list) {
             joystick->Update();
