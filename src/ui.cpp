@@ -83,32 +83,69 @@ void left_panel(
 
     int value = 0;
     std::string button_name = "N/A";
-    for (int i = 0; i < joystick.inputs.size(); i++) {
-        auto input = joystick.inputs[i];
-        bool active = false;
-        bool is_axis = input->type == HO_AXIS;
+    static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_DrawLinesFull;
+    if (ImGui::TreeNodeEx("Axes", base_flags)) {
+        for (int i = 0; i < joystick.naxes; i++) {
+            int push_count = 0;
+            bool active = false;
+            auto input = joystick.inputs[i];
 
-        value = input->value;
-        if ((is_axis && (value > 300 || value < -300))
-                || (!is_axis && (value == 1))) {
-            ImGui::PushStyleColor(ImGuiCol_Button,
-                    ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
-            active = true;
+            value = input->value;
+            if (ui_context.selected_input == input) {
+                push_count++;
+                ImGui::PushStyleColor(ImGuiCol_Button,
+                        ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+            }
+            if ((value > 300 || value < -300) && ui_context.listening) {
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.33f, 1.0f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.0f));
+                push_count += 2;
+                active = true;
+                ui_context.selected_input = input;
+            }
+
+            int index = i + 1;
+            button_name = "Axis " + std::to_string(index);
+            if (ImGui::Button(button_name.c_str()))
+                ui_context.selected_input = input;
+            ImGui::PopStyleColor(push_count);
         }
+        ImGui::TreePop();
+    }
+    if (ImGui::TreeNodeEx("Buttons", base_flags)) {
+        for (int i = joystick.naxes; i < joystick.inputs.size(); i++) {
+            int push_count = 0;
+            auto input = joystick.inputs[i];
+            bool active = false;
 
-        int index = i + 1 - (is_axis ? 0 : joystick.naxes);
-        button_name = (is_axis ? "Axis " : "Button ") + std::to_string(index);
-        if (ImGui::Button(button_name.c_str()))
-            ui_context.selected_input = input;
+            value = input->value;
+            if (ui_context.selected_input == input) {
+                push_count++;
+                ImGui::PushStyleColor(ImGuiCol_Button,
+                        ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+            }
+            if (value == 1 && ui_context.listening) {
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.33f, 1.0f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.0f));
+                push_count += 2;
+                active = true;
+                ui_context.selected_input = input;
+            }
 
-        if (active)
-            ImGui::PopStyleColor();
+            int index = i + 1 - joystick.naxes;
+            button_name = "Button " + std::to_string(index);
+            if (ImGui::Button(button_name.c_str()))
+                ui_context.selected_input = input;
+            ImGui::PopStyleColor(push_count);
+        }
+        ImGui::TreePop();
     }
 
     ImGui::EndChild();
 }
 
 void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
+    static int item_selected_idx_input = 0;
     HandsOn::Input* selected_input = ui_context.selected_input.get();
     if (!selected_input)
         return;
@@ -127,7 +164,7 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     name_list.push_back("None");
     for (auto entry : vjs_list)
         name_list.push_back(entry->name);
-    static int selected_vjs_id = 0;
+    int selected_vjs_id = 0;
 
     if (selected_input && selected_input->js_dest) {
         auto it = std::find_if(vjs_list.begin(), vjs_list.end(), [&](const auto& vjs_item) {
@@ -145,11 +182,15 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     if (ImGui::BeginCombo("Target virtual joystick selection", combo_preview_value.c_str())) {
         for (int n = 0; n < name_list.size(); n++) {
             const bool is_selected = (selected_vjs_id == n);
-            if (ImGui::Selectable(name_list[n].c_str(), is_selected))
+            if (ImGui::Selectable(name_list[n].c_str(), is_selected)) {
                 selected_vjs_id = n;
+                item_selected_idx_input = 0;
+                selected_input->js_dest = selected_vjs_id ?
+                    vjs_list[selected_vjs_id - 1] : nullptr;
+                selected_input->dest_input = -1;
+                selected_input->dest_type = -1;
+            }
         }
-        selected_input->js_dest = selected_vjs_id ?
-            vjs_list[selected_vjs_id - 1] : nullptr;
         ImGui::EndCombo();
     }
 
@@ -171,7 +212,6 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
             name = ((is_axis) ? "Axis " : "Button ") + std::to_string(name_id + 1);
             name_list.push_back(name);
         }
-        static int item_selected_idx_input = 0;
         combo_preview_value = name_list[item_selected_idx_input];
 
         if (ImGui::BeginCombo("Target virtual input selection", combo_preview_value.c_str())) {
@@ -191,12 +231,27 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     ImGui::EndChild();
 }
 
-// TODO: Fix crash when removing a boud vjoystick
+// TODO: Fix crash when removing a bound vjoystick
 void sdljoystick_ui_content(
         HandsOn::Context& context,
         HandsOn::UIContext& ui_context,
         HandsOn::Joystick& joystick) {
     HandsOn::SDLJoystick* js = (HandsOn::SDLJoystick*)&joystick;
+
+    bool listen_pressed = false;
+    std::string listen_button_name = "Listen to inputs";
+    if (ui_context.listening) {
+        ImGui::PushStyleColor(ImGuiCol_Button,
+                ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
+    listen_button_name = "Listening to inputs...";
+    }
+    if (ImGui::Button(listen_button_name.c_str())) {
+        ui_context.listening = !ui_context.listening;
+        listen_pressed = true;
+    }
+    if (!listen_pressed && ui_context.listening
+            || listen_pressed && !ui_context.listening)
+        ImGui::PopStyleColor();
 
     left_panel(context, ui_context, *js);
 
