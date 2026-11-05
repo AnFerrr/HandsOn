@@ -8,18 +8,18 @@
 namespace HandsOn {
     class VJoystick : public Joystick {
         public:
-            VJoystick(std::string name, short naxes, short nbuttons);
+            VJoystick(std::string name, short naxes, short nbuttons, int id);
             ~VJoystick();
             virtual void Update() override;
             int Initialize();
             virtual void SetInput(Input& input) override;
             virtual int GetInput(int input) override;
-            //virtual void SetButtonInput(Input& input) override;
-            //virtual int GetButtonInput(int input) override;
+            int GetVID();
 
         private:
             struct libevdev* evdev;
             struct libevdev_uinput* uidev;
+            int vid = 0;
     };
 }
 

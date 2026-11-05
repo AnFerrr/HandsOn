@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include "../include/json.hpp"
 
 int make_window(SDL_Window*& window, SDL_GLContext& gl_context) {
     const char* glsl_version = "#version 130";
@@ -98,7 +99,7 @@ void left_panel(
             }
             if ((value > 300 || value < -300) && ui_context.listening) {
                 ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.33f, 1.0f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.0f));
+                ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.1f));
                 push_count += 2;
                 active = true;
                 ui_context.selected_input = input;
@@ -126,7 +127,7 @@ void left_panel(
             }
             if (value == 1 && ui_context.listening) {
                 ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.33f, 1.0f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.0f));
+                ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.1f));
                 push_count += 2;
                 active = true;
                 ui_context.selected_input = input;
@@ -151,10 +152,10 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
         return;
 
     bool is_axis = selected_input->type;
-    int input_id = selected_input->src_input;
 
     ImGui::BeginChild("Input config");
     ImGui::PushFont(NULL, 24.0f);
+    ImGui::Text("Input config");
     ImGui::PopFont();
     ImGui::Text("Input value: %i", selected_input->value);
 
@@ -172,9 +173,7 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
                 });
 
         if (it != vjs_list.end()) 
-        {
             selected_vjs_id = std::distance(vjs_list.begin(), it) + 1;
-        }
     }
 
     std::string combo_preview_value = name_list[selected_vjs_id];
@@ -253,6 +252,11 @@ void sdljoystick_ui_content(
             || listen_pressed && !ui_context.listening)
         ImGui::PopStyleColor();
 
+    ImGui::SameLine();
+
+    if (ImGui::Button("Load config"))
+        HandsOn::load_config(context);
+
     left_panel(context, ui_context, *js);
 
     ImGui::SameLine();
@@ -260,6 +264,9 @@ void sdljoystick_ui_content(
     right_panel(context, ui_context);
 }
 
+/* TODO: doubleclicking the tab renames the vjoy? or should it be a 
+ * field? name cannot be empty or none
+ */
 void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     int item_selected_idx = 0;
     auto& js_list = context.js_list;
@@ -289,7 +296,8 @@ void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context
             int index = context.vjs_list.size();
             std::string vjoystick_name = "HandsOn Virtual joystick: " + std::to_string(index);
 
-            vjs_list.push_back(std::move(std::make_shared<HandsOn::VJoystick>(vjoystick_name, 4, 4)));
+            vjs_list.push_back(std::move(std::make_shared<HandsOn::VJoystick>
+                        (vjoystick_name, 4, 4, context.vjs_list.size())));
             if (((HandsOn::VJoystick*)vjs_list[index].get())->Initialize() != 0)
                 throw std::runtime_error("Couldn't create virtual Joystick.");
         }
@@ -307,11 +315,6 @@ void imgui_loop(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     imgui_frame_init();
 
     ImGui::DockSpaceOverViewport();
-
-    bool opened = true;
-    if (ImGui::Button("Test")) {
-        context.js_list[0]->inputs[0]->js_dest = context.vjs_list[0];
-    }
     if (ImGui::Begin("Joystick List")) {
         joystick_tab_list(context, ui_context);
 

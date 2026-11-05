@@ -4,7 +4,9 @@
 namespace HandsOn {
     VJoystick::VJoystick(std::string name,
             short naxes,
-            short nbuttons) : Joystick(name, naxes, nbuttons) {
+            short nbuttons,
+            int vid) : Joystick(name, naxes, nbuttons) {
+        this->vid = vid;
         is_virtual = true;
     };
 
@@ -68,5 +70,9 @@ namespace HandsOn {
 
     void VJoystick::Update() {
         libevdev_uinput_write_event(this->uidev, EV_SYN, SYN_REPORT, 0);
+    }
+
+    int VJoystick::GetVID() {
+        return this->vid;
     }
 }

@@ -10,6 +10,7 @@
 #include "../include/ui.hpp"
 #include "../include/joystick.hpp"
 #include "../include/context.hpp"
+#include "../include/json.hpp"
 
 int create_joystick_list(HandsOn::Context& context) {
     if (!SDL_HasJoystick()) {
@@ -61,22 +62,11 @@ int init(HandsOn::Context& context) {
 
 int main() {
     HandsOn::Context context;
+    HandsOn::UIContext ui_context;
 
     int res = init(context);
     if (res != 0)
         return res;
-
-    //context.vjs_list.push_back(std::move(std::make_shared<HandsOn::VJoystick>("HandsOn Virtual joystick: 0", 4, 4)));
-    //if (((HandsOn::VJoystick*)context.vjs_list[0].get())->Initialize() != 0)
-    //    return 2;
-    //context.vjs_list.push_back(std::move(std::make_shared<HandsOn::VJoystick>("HandsOn Virtual joystick: 1", 4, 4)));
-    //if (((HandsOn::VJoystick*)context.vjs_list[1].get())->Initialize() != 0)
-    //    return 2;
-
-    if (res != 0)
-        return 2;
-
-    HandsOn::UIContext ui_context;
 
     do {
         SDL_Event event;
@@ -135,6 +125,7 @@ int main() {
 
         SDL_Delay(1);
     } while (!context.stopping);
+    HandsOn::write_config(context);
 
     SDL_Quit();
 
