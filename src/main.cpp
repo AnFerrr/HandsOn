@@ -125,7 +125,6 @@ int main() {
 
         SDL_Delay(1);
     } while (!context.stopping);
-    HandsOn::write_config(context);
 
     SDL_Quit();
 

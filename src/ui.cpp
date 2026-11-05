@@ -145,6 +145,7 @@ void left_panel(
     ImGui::EndChild();
 }
 
+// TODO: Bug, selected input doesn't appear properly yet 
 void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     static int item_selected_idx_input = 0;
     HandsOn::Input* selected_input = ui_context.selected_input.get();
@@ -256,6 +257,8 @@ void sdljoystick_ui_content(
 
     if (ImGui::Button("Load config"))
         HandsOn::load_config(context);
+    if (ImGui::Button("Load config"))
+        HandsOn::write_config(context);
 
     left_panel(context, ui_context, *js);
 
