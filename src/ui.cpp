@@ -232,7 +232,6 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     ImGui::EndChild();
 }
 
-// BUG: Fix crash when removing a bound vjoystick
 void sdljoystick_ui_content(
         HandsOn::Context& context,
         HandsOn::UIContext& ui_context,
@@ -258,7 +257,6 @@ void sdljoystick_ui_content(
 
     float button_width = 180;
     ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - button_width);
-
 
     if (ImGui::Button("Load config"))
         HandsOn::load_config(context);
@@ -293,12 +291,24 @@ void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context
         }
 
         for (int i = 0; i < vjs_list.size(); i++) {
-            auto js = vjs_list[i];
-            bool result = ImGui::BeginTabItem(js->name.c_str());
-            if (ImGui::IsItemClicked(2))
+            auto vjs = vjs_list[i];
+            bool result = ImGui::BeginTabItem(vjs->name.c_str());
+            if (ImGui::IsItemClicked(2)) {
+                for (auto& js : js_list) {
+                    for (auto& input : js->inputs) {
+                        if (input->js_dest == vjs) {
+                            input->js_dest = nullptr;
+                            input->dest_input = 0;
+                            input->dest_type = -1;
+                            input->filters.clear();
+                        }
+                    }
+                }
+
                 vjs_list.erase(vjs_list.begin() + i);
+            }
             if (result) {
-                ImGui::Text("This is the %s tab!", js->name.c_str());
+                ImGui::Text("This is the %s tab!", vjs->name.c_str());
                 ImGui::EndTabItem();
             }
         }
