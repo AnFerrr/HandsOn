@@ -37,15 +37,4 @@ namespace HandsOn {
     }
 
     void SDLJoystick::SetInput(Input &input) {};
-
-    // TODO: Remove
-    int SDLJoystick::GetInput(int input) {
-        /*
-        if (input < inputs.size())
-            return inputs[input]->value;
-        else
-            throw(std::runtime_error("Selected axis doesn't exist."));
-            */
-        throw(std::runtime_error("Oops this has been called."));
-    };
 } // namespace HandsOn

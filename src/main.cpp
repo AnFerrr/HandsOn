@@ -5,38 +5,10 @@
 #include <iostream>
 #include <libevdev-1.0/libevdev/libevdev-uinput.h>
 #include <string>
-#include <unordered_map>
 #include "libevdev-1.0/libevdev/libevdev.h"
 #include "../include/ui.hpp"
 #include "../include/joystick.hpp"
 #include "../include/context.hpp"
-#include "../include/json.hpp"
-
-int create_joystick_list(HandsOn::Context& context) {
-    if (!SDL_HasJoystick()) {
-        std::cerr << "No joystick detected" << std::endl;
-        return -1;
-    }
-
-    int count = 0;
-    auto joysticks = SDL_GetJoysticks(&count);
-    for (int i = 0; i < count; i++) {
-        SDL_Joystick* joystick = SDL_OpenJoystick(joysticks[i]);
-        std::string name = SDL_GetJoystickName(joystick);
-        auto ho_joystick = std::make_shared<HandsOn::SDLJoystick>(
-                name,
-                SDL_GetNumJoystickAxes(joystick),
-                SDL_GetNumJoystickButtons(joystick),
-                joystick
-                );
-
-        context.js_list.push_back(ho_joystick);
-    }
-
-    SDL_free(joysticks);
-
-    return 0;
-}
 
 int sdl_init() {
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -69,47 +41,47 @@ int main() {
         return res;
 
     do {
+        auto& js_list = context.GetJSList();
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
             ImGui_ImplSDL3_ProcessEvent(&event);
             if (event.type == SDL_EVENT_QUIT) {
-                context.stopping = true;
+                context.Stop();
             } else if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
-                    event.window.windowID == SDL_GetWindowID(context.window)) {
-                context.stopping = true;
+                    event.window.windowID == SDL_GetWindowID(context.GetWindow())) {
+                context.Stop();
             } else if (event.type == SDL_EVENT_JOYSTICK_REMOVED) {
-                for (int i = 0; i < context.js_list.size(); i++) {
+                for (int i = 0; i < context.JSCount(); i++) {
                     HandsOn::SDLJoystick* sdl_joystick =
-                        (HandsOn::SDLJoystick*)context.js_list[i].get();
+                        (HandsOn::SDLJoystick*)js_list[i].get();
                     if (sdl_joystick->js &&
                             (SDL_GetJoystickID(sdl_joystick->js) == event.gdevice.which)) {
-                        SDL_CloseJoystick(sdl_joystick->js);
-                        context.js_list.erase(context.js_list.begin() + i);
+                        // TODO: This should be redundant
+                        //SDL_CloseJoystick(sdl_joystick->js);
+                        context.RemoveJoystick(i);
                     }
                 }
             } else if (event.type == SDL_EVENT_JOYSTICK_ADDED) {
                 auto new_joystick = SDL_OpenJoystick(event.gdevice.which);
                 std::string name = SDL_GetJoystickName(new_joystick);
                 if (name.rfind("HandsOn Virtual joystick: ", 0) != 0) {
-                    auto ho_joystick = std::make_shared<HandsOn::SDLJoystick>(
-                            name,
-                            SDL_GetNumJoystickAxes(new_joystick),
-                            SDL_GetNumJoystickButtons(new_joystick),
-                            new_joystick
-                            );
+                    std::shared_ptr<HandsOn::Joystick> ho_joystick =
+                        std::make_shared<HandsOn::SDLJoystick>(
+                                name,
+                                SDL_GetNumJoystickAxes(new_joystick),
+                                SDL_GetNumJoystickButtons(new_joystick),
+                                new_joystick
+                                );
 
-                    context.js_list.push_back(ho_joystick);
-                    context.js_list[0]->inputs[0]->filters.push_back([](HandsOn::Input& input){
-                            input.value = input.value * -1;
-                            });
+                    context.AddJoystick(ho_joystick);
                 }
             }
 
         }
         imgui_loop(context, ui_context);
 
-        for (auto& joystick : context.js_list) {
+        for (auto& joystick : js_list) {
             joystick->Update();
             for (auto& input : joystick->inputs) {
                 for (auto& filter : input->filters)
@@ -119,13 +91,15 @@ int main() {
             }
         }
 
-        auto& vjs_list = context.vjs_list;
+        auto& vjs_list = context.GetVJSList();
         for (auto& vjs : vjs_list)
             vjs->Update();
 
         SDL_Delay(1);
     } while (!context.stopping);
 
+    // TODO: Check errors
+    SDL_GL_DestroyContext(context.GetGLContext());
     SDL_Quit();
 
     ImGui_ImplOpenGL3_Shutdown();

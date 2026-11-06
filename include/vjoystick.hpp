@@ -13,7 +13,6 @@ namespace HandsOn {
             virtual void Update() override;
             int Initialize();
             virtual void SetInput(Input& input) override;
-            virtual int GetInput(int input) override;
             int GetVID();
 
         private:

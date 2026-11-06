@@ -25,6 +25,7 @@ int make_window(SDL_Window*& window, SDL_GLContext& gl_context) {
         return -1;
     }
  
+    // TODO: Check errors
     gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(0);
@@ -53,8 +54,8 @@ int init_imgui(HandsOn::Context& context) {
         return -1;
     }
 
-    context.gl_context = gl_context;
-    context.window = window;
+    context.SetGLContext(gl_context);
+    context.SetWindow(window);
 
     return 0;
 }
@@ -71,7 +72,7 @@ void imgui_frame_end(HandsOn::Context& context) {
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    SDL_GL_SwapWindow(context.window);
+    SDL_GL_SwapWindow(context.GetWindow());
 }
 
 void left_panel(
@@ -161,7 +162,7 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     ImGui::PopFont();
     ImGui::Text("Input value: %i", selected_input->value);
 
-    auto& vjs_list = context.vjs_list;
+    auto& vjs_list = context.GetVJSList();
 
     std::vector<std::string> name_list;
     name_list.push_back("None");
@@ -278,8 +279,8 @@ void sdljoystick_ui_content(
  */
 void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     int item_selected_idx = 0;
-    auto& js_list = context.js_list;
-    auto& vjs_list = context.vjs_list;
+    auto& js_list = context.GetJSList();
+    auto& vjs_list = context.GetVJSList();
     bool opened[] = { true, true };
 
     if (ImGui::BeginTabBar("MyTabBar")) {
@@ -314,12 +315,12 @@ void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context
         }
 
         if (ImGui::TabItemButton("+")) {
-            int index = context.vjs_list.size();
-            std::string vjoystick_name = "HandsOn Virtual joystick: " + std::to_string(index);
+            int vjs_count = context.VJSCount();
+            std::string vjoystick_name = "HandsOn Virtual joystick: " + std::to_string(vjs_count);
 
             vjs_list.push_back(std::move(std::make_shared<HandsOn::VJoystick>
-                        (vjoystick_name, 4, 4, context.vjs_list.size())));
-            if (((HandsOn::VJoystick*)vjs_list[index].get())->Initialize() != 0)
+                        (vjoystick_name, 4, 4, vjs_count)));
+            if (((HandsOn::VJoystick*)vjs_list[vjs_count].get())->Initialize() != 0)
                 throw std::runtime_error("Couldn't create virtual Joystick.");
         }
 

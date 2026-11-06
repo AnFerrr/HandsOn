@@ -18,7 +18,6 @@ namespace HandsOn {
 
         virtual void Update() = 0;
         virtual void SetInput(Input& input) = 0;
-        virtual int GetInput(int input) = 0;
     };
 }
 

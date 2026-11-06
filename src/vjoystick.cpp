@@ -25,9 +25,6 @@ namespace HandsOn {
                  ? input.dest_input + 0x100 : input.dest_input),
                 input.value);
     };
-    int VJoystick::GetInput(int input) {
-        return 0;
-    };
 
     int VJoystick::Initialize() {
         int err;

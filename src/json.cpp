@@ -5,8 +5,11 @@
 
 using nlohmann::json;
 
+// TODO: check for file error.
+// BUG: loading twice crashes
 void HandsOn::load_config(HandsOn::Context& context) {
-    auto& vjs_list = context.vjs_list;
+    auto& js_list = context.GetJSList();
+    auto& vjs_list = context.GetVJSList();
     std::ifstream f("config.json");
     json data = json::parse(f);
 
@@ -26,7 +29,8 @@ void HandsOn::load_config(HandsOn::Context& context) {
 
     index = 0;
     for (auto& json_joystick : data["hardware_joysticks"]) {
-        for (auto& joystick : context.js_list) {
+        for (auto& joystick : js_list) {
+                std::cout << "Test" << std::endl;
             auto sdl_joystick = (HandsOn::SDLJoystick*)joystick.get();
             std::string guid;
             for (auto& data : SDL_GetJoystickGUID(sdl_joystick->js).data)
@@ -44,11 +48,11 @@ void HandsOn::load_config(HandsOn::Context& context) {
                         return c_joystick->name == json_input["vjs_dest"];
                     };
 
-                    auto it = std::find_if(context.vjs_list.begin(),
-                            context.vjs_list.end(), comp);
+                    auto it = std::find_if(vjs_list.begin(),
+                            vjs_list.end(), comp);
 
                     std::shared_ptr<HandsOn::Joystick> selected = nullptr;
-                    if (it != context.vjs_list.end())
+                    if (it != vjs_list.end())
                         selected = *it.base();
                     input->js_dest = (json_input["vjs_dest"] == "none" ?
                             nullptr : selected);
@@ -75,12 +79,14 @@ nlohmann::json write_inputs(HandsOn::SDLJoystick& joystick) {
     return inputs;
 };
 
+// TODO: check for file error.
 void HandsOn::write_config(HandsOn::Context& context) {
     std::ofstream f("config.json");
     nlohmann::json config;
+    const auto& js_list = context.GetJSList();
+    const auto& vjs_list = context.GetVJSList();
 
-
-    for (auto& joystick : context.js_list) {
+    for (const auto& joystick : js_list) {
         auto sdl_joystick =
             (HandsOn::SDLJoystick*)joystick.get();
 
@@ -96,7 +102,7 @@ void HandsOn::write_config(HandsOn::Context& context) {
 
         config["hardware_joysticks"].push_back(json_joystick);
     }
-    for (auto& joystick : context.vjs_list) {
+    for (const auto& joystick : vjs_list) {
         auto v_joystick =
             (HandsOn::VJoystick*)joystick.get();
 
