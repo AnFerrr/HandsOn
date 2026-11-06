@@ -145,7 +145,8 @@ void left_panel(
     ImGui::EndChild();
 }
 
-// TODO: Bug, selected input doesn't appear properly yet 
+// BUG: loaded selected input doesn't appear properly yet 
+// BUG: crash when loading over new config
 void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     static int item_selected_idx_input = 0;
     HandsOn::Input* selected_input = ui_context.selected_input.get();
@@ -231,7 +232,7 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     ImGui::EndChild();
 }
 
-// TODO: Fix crash when removing a bound vjoystick
+// BUG: Fix crash when removing a bound vjoystick
 void sdljoystick_ui_content(
         HandsOn::Context& context,
         HandsOn::UIContext& ui_context,
@@ -255,9 +256,16 @@ void sdljoystick_ui_content(
 
     ImGui::SameLine();
 
+    float button_width = 180;
+    ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - button_width);
+
+
     if (ImGui::Button("Load config"))
         HandsOn::load_config(context);
-    if (ImGui::Button("Load config"))
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Save config"))
         HandsOn::write_config(context);
 
     left_panel(context, ui_context, *js);
