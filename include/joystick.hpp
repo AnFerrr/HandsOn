@@ -7,13 +7,13 @@
 #include "input.hpp"
 
 namespace HandsOn {
-    struct Context;
+    class Context;
     struct Joystick {
         Joystick(std::string name, short naxes, short nbuttons);
         std::string name = "N/A";
         short naxes = 4;
         short nbuttons = 30;
-        std::vector<std::shared_ptr<Input>> inputs;
+        std::vector<Input> inputs;
         bool is_virtual = false;
 
         virtual void Update() = 0;

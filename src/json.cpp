@@ -40,9 +40,9 @@ void HandsOn::load_config(HandsOn::Context& context) {
                 for (int i = 0; i < json_joystick["inputs"].size(); i++) {
                     auto& input = sdl_joystick->inputs[i];
                     auto& json_input = json_joystick["inputs"][std::to_string(i)];
-                    input->dest_input = json_input["dest_input"].get<int>();
-                    input->dest_type = json_input["dest_type"].get<int>();
-                    input->type = json_input["type"].get<int>();
+                    input.SetDestinationInput(json_input["dest_input"].get<int>());
+                    input.SetDestinationType(json_input["dest_type"].get<int>());
+                    input.SetType(json_input["type"].get<int>());
 
                     auto comp = [&](std::shared_ptr<HandsOn::Joystick> c_joystick) {
                         return c_joystick->name == json_input["vjs_dest"];
@@ -54,8 +54,8 @@ void HandsOn::load_config(HandsOn::Context& context) {
                     std::shared_ptr<HandsOn::Joystick> selected = nullptr;
                     if (it != vjs_list.end())
                         selected = *it.base();
-                    input->js_dest = (json_input["vjs_dest"] == "none" ?
-                            nullptr : selected);
+                    input.SetDestinationJoystick((json_input["vjs_dest"] == "none" ?
+                            nullptr : selected));
                 }
             }
         }
@@ -66,13 +66,13 @@ nlohmann::json write_inputs(HandsOn::SDLJoystick& joystick) {
     nlohmann::json inputs;
 
     for (int i = 0; i < joystick.inputs.size(); i++) {
-        auto input = joystick.inputs[i];
+        auto& input = joystick.inputs[i];
         nlohmann::json json_inputs;
-        json_inputs["type"] = input->type;
-        json_inputs["dest_type"] = input->dest_type;
-        json_inputs["dest_input"] = input->dest_input;
+        json_inputs["type"] = input.GetType();
+        json_inputs["dest_type"] = input.GetDestinationType();
+        json_inputs["dest_input"] = input.GetDestinationInput();
         json_inputs["vjs_dest"] =
-            (input->js_dest ? input->js_dest->name : "none");
+            (input() ? input.GetDestinationJoystick()->name : "none");
         inputs[std::to_string(i)] = json_inputs; 
     }
 

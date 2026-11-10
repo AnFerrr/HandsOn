@@ -7,7 +7,7 @@
 
 namespace HandsOn {
     struct UIContext {
-        std::shared_ptr<Input> selected_input = nullptr;
+        Input* selected_input = nullptr;
         bool listening = false;
     };
 }

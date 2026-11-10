@@ -7,7 +7,7 @@
 
 namespace HandsOn {
     // TODO: Make vj_list and j_list a single list
-    struct Context {
+    class Context {
         public:
             void SetWindow(SDL_Window* window) {
                 this->window = window;

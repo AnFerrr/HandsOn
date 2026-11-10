@@ -20,10 +20,10 @@ namespace HandsOn {
     void VJoystick::SetInput(Input& input) {
         libevdev_uinput_write_event(
                 this->uidev,
-                input.dest_type,
-                (input.dest_type == HO_BUTTON
-                 ? input.dest_input + 0x100 : input.dest_input),
-                input.value);
+                input.GetDestinationType(),
+                (input.GetDestinationType() == HO_BUTTON
+                 ? input.GetDestinationInput() + 0x100 : input.GetDestinationInput()),
+                input.GetValue());
     };
 
     int VJoystick::Initialize() {

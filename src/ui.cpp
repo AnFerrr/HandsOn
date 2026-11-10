@@ -75,6 +75,7 @@ void imgui_frame_end(HandsOn::Context& context) {
     SDL_GL_SwapWindow(context.GetWindow());
 }
 
+// TODO: Refactor this
 void left_panel(
         HandsOn::Context& context,
         HandsOn::UIContext& ui_context,
@@ -83,22 +84,22 @@ void left_panel(
             ImVec2(ImGui::GetContentRegionAvail().x * 0.2f,
                 ImGui::GetContentRegionAvail().y), ImGuiChildFlags_Borders);
 
-    int value = 0;
+    float raw_value = 0;
     std::string button_name = "N/A";
     static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_DrawLinesFull;
     if (ImGui::TreeNodeEx("Axes", base_flags)) {
         for (int i = 0; i < joystick.naxes; i++) {
             int push_count = 0;
             bool active = false;
-            auto input = joystick.inputs[i];
+            auto* input = &joystick.inputs[i];
 
-            value = input->value;
+            raw_value = input->GetRawValue();
             if (ui_context.selected_input == input) {
                 push_count++;
                 ImGui::PushStyleColor(ImGuiCol_Button,
                         ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
             }
-            if ((value > 300 || value < -300) && ui_context.listening) {
+            if ((raw_value > 300 || raw_value < -300) && ui_context.listening) {
                 ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.33f, 1.0f, 1.0f));
                 ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.1f));
                 push_count += 2;
@@ -117,16 +118,16 @@ void left_panel(
     if (ImGui::TreeNodeEx("Buttons", base_flags)) {
         for (int i = joystick.naxes; i < joystick.inputs.size(); i++) {
             int push_count = 0;
-            auto input = joystick.inputs[i];
+            auto* input = &joystick.inputs[i];
             bool active = false;
 
-            value = input->value;
+            raw_value = input->GetRawValue();
             if (ui_context.selected_input == input) {
                 push_count++;
                 ImGui::PushStyleColor(ImGuiCol_Button,
                         ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
             }
-            if (value == 1 && ui_context.listening) {
+            if (raw_value == 1 && ui_context.listening) {
                 ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.33f, 1.0f, 1.0f));
                 ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.0f, 0.0f, 0.1f));
                 push_count += 2;
@@ -150,17 +151,18 @@ void left_panel(
 // BUG: crash when loading over new config
 void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     static int item_selected_idx_input = 0;
-    HandsOn::Input* selected_input = ui_context.selected_input.get();
+    auto* selected_input = ui_context.selected_input;
     if (!selected_input)
         return;
 
-    bool is_axis = selected_input->type;
+    bool is_axis = selected_input->GetType() == HO_AXIS;
 
     ImGui::BeginChild("Input config");
     ImGui::PushFont(NULL, 24.0f);
     ImGui::Text("Input config");
     ImGui::PopFont();
-    ImGui::Text("Input value: %i", selected_input->value);
+    ImGui::Text("Raw input value: %.2f", selected_input->GetRawValue());
+    ImGui::Text("Processed input value: %.2f", selected_input->GetValue());
 
     auto& vjs_list = context.GetVJSList();
 
@@ -170,9 +172,9 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
         name_list.push_back(entry->name);
     int selected_vjs_id = 0;
 
-    if (selected_input && selected_input->js_dest) {
+    if (selected_input != nullptr && (*selected_input)()) {
         auto it = std::find_if(vjs_list.begin(), vjs_list.end(), [&](const auto& vjs_item) {
-                return selected_input->js_dest->name == vjs_item->name;
+                return selected_input->GetDestinationJoystick()->name == vjs_item->name;
                 });
 
         if (it != vjs_list.end()) 
@@ -187,18 +189,18 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
             if (ImGui::Selectable(name_list[n].c_str(), is_selected)) {
                 selected_vjs_id = n;
                 item_selected_idx_input = 0;
-                selected_input->js_dest = selected_vjs_id ?
-                    vjs_list[selected_vjs_id - 1] : nullptr;
-                selected_input->dest_input = -1;
-                selected_input->dest_type = -1;
+                selected_input->SetDestinationJoystick(selected_vjs_id ?
+                    vjs_list[selected_vjs_id - 1] : nullptr);
+                selected_input->SetDestinationInput(-1);
+                selected_input->SetDestinationType(-1);
             }
         }
         ImGui::EndCombo();
     }
 
-    if (selected_input && selected_input->js_dest) {
-        int naxes = selected_input->js_dest->naxes;
-        int nbuttons = selected_input->js_dest->nbuttons;
+    if (selected_input != nullptr && (*selected_input)()) {
+        int naxes = selected_input->GetDestinationJoystick()->naxes;
+        int nbuttons = selected_input->GetDestinationJoystick()->nbuttons;
         int input_size = naxes + nbuttons;
 
         bool is_axis = false;
@@ -221,8 +223,8 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
                 is_axis = n < naxes;
                 const bool is_selected = (item_selected_idx_input == n);
                 if (ImGui::Selectable(name_list[n].c_str(), is_selected)) {
-                    selected_input->dest_input = is_axis ? n - 1 : n - 1 - naxes;
-                    selected_input->dest_type = is_axis ? HO_AXIS : HO_BUTTON;
+                    selected_input->SetDestinationInput(is_axis ? n - 1 : n - 1 - naxes);
+                    selected_input->SetDestinationType(is_axis ? HO_AXIS : HO_BUTTON);
                     item_selected_idx_input = n;
                 }
             }
@@ -296,12 +298,12 @@ void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context
             bool result = ImGui::BeginTabItem(vjs->name.c_str());
             if (ImGui::IsItemClicked(2)) {
                 for (auto& js : js_list) {
+                    /*
+                     *  TODO: Refactor this, clearInputs() or something.
+                     */
                     for (auto& input : js->inputs) {
-                        if (input->js_dest == vjs) {
-                            input->js_dest = nullptr;
-                            input->dest_input = 0;
-                            input->dest_type = -1;
-                            input->filters.clear();
+                        if (input.GetDestinationJoystick() == vjs) {
+                            input.Clear();
                         }
                     }
                 }
