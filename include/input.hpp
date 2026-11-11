@@ -15,7 +15,7 @@ namespace HandsOn {
     struct Joystick;
 
     // TODO: At some point, add lua filters/scripts :D
-    struct Input {
+    class Input {
         public:
             Input(std::shared_ptr<Joystick> js_dest,
                     int src_input,

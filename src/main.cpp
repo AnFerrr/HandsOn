@@ -83,11 +83,11 @@ int main() {
 
         for (auto& joystick : js_list) {
             joystick->Update();
-            for (auto& input : joystick->inputs) {
+            for (auto& input : joystick->GetInputs()) {
                 // TODO: Redo this
                 input.ApplyFilters();
                 if (input())
-                    input.GetDestinationJoystick()->SetInput(input);
+                    input.GetDestinationJoystick()->SetInputValue(input);
             }
         }
 

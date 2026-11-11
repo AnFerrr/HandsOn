@@ -38,14 +38,14 @@ void HandsOn::load_config(HandsOn::Context& context) {
 
             if (guid == json_joystick["guid"].get<std::string>()) {
                 for (int i = 0; i < json_joystick["inputs"].size(); i++) {
-                    auto& input = sdl_joystick->inputs[i];
+                    auto& input = sdl_joystick->GetInput(i);
                     auto& json_input = json_joystick["inputs"][std::to_string(i)];
                     input.SetDestinationInput(json_input["dest_input"].get<int>());
                     input.SetDestinationType(json_input["dest_type"].get<int>());
                     input.SetType(json_input["type"].get<int>());
 
                     auto comp = [&](std::shared_ptr<HandsOn::Joystick> c_joystick) {
-                        return c_joystick->name == json_input["vjs_dest"];
+                        return c_joystick->GetName() == json_input["vjs_dest"];
                     };
 
                     auto it = std::find_if(vjs_list.begin(),
@@ -65,14 +65,14 @@ void HandsOn::load_config(HandsOn::Context& context) {
 nlohmann::json write_inputs(HandsOn::SDLJoystick& joystick) {
     nlohmann::json inputs;
 
-    for (int i = 0; i < joystick.inputs.size(); i++) {
-        auto& input = joystick.inputs[i];
+    for (int i = 0; i < joystick.GetInputCount(); i++) {
+        auto& input = joystick.GetInput(i);
         nlohmann::json json_inputs;
         json_inputs["type"] = input.GetType();
         json_inputs["dest_type"] = input.GetDestinationType();
         json_inputs["dest_input"] = input.GetDestinationInput();
         json_inputs["vjs_dest"] =
-            (input() ? input.GetDestinationJoystick()->name : "none");
+            (input() ? input.GetDestinationJoystick()->GetName() : "none");
         inputs[std::to_string(i)] = json_inputs; 
     }
 
@@ -98,7 +98,7 @@ void HandsOn::write_config(HandsOn::Context& context) {
 
         json_joystick["inputs"] = write_inputs(*sdl_joystick);
         json_joystick["guid"] = guid;
-        json_joystick["name"] = sdl_joystick->name;
+        json_joystick["name"] = sdl_joystick->GetName();
 
         config["hardware_joysticks"].push_back(json_joystick);
     }
@@ -109,10 +109,10 @@ void HandsOn::write_config(HandsOn::Context& context) {
         nlohmann::json json_joystick;
         std::string guid;
 
-        json_joystick["nbuttons"] = v_joystick->nbuttons;
-        json_joystick["naxes"] = v_joystick->naxes;
+        json_joystick["nbuttons"] = v_joystick->GetButtonsCount();
+        json_joystick["naxes"] = v_joystick->GetAxesCount();
         json_joystick["vid"] = v_joystick->GetVID();
-        json_joystick["name"] = v_joystick->name;
+        json_joystick["name"] = v_joystick->GetName();
 
         config["virtual_joysticks"].push_back(json_joystick);
     }

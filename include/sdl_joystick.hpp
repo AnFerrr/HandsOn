@@ -14,7 +14,7 @@ namespace HandsOn {
                 SDL_Joystick* js);
         ~SDLJoystick();
         virtual void Update() override;
-        virtual void SetInput(Input& input) override;
+        virtual void SetInputValue(Input& input) override;
 
         SDL_JoystickID js_id;
         SDL_Joystick* js;

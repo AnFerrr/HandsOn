@@ -10,9 +10,11 @@ namespace HandsOn {
         public:
             VJoystick(std::string name, short naxes, short nbuttons, int id);
             ~VJoystick();
-            virtual void Update() override;
+
             int Initialize();
-            virtual void SetInput(Input& input) override;
+
+            virtual void Update() override;
+            virtual void SetInputValue(Input& input) override;
             int GetVID();
 
         private:

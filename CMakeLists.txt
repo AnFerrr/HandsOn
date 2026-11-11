@@ -57,6 +57,8 @@ add_executable(hands_on
     src/sdl_joystick.cpp
     src/input.cpp
     src/ui.cpp
+    src/json.cpp
+    src/context.cpp
 )
 target_link_libraries(hands_on PRIVATE
     imgui

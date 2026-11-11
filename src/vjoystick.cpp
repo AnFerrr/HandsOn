@@ -5,9 +5,8 @@ namespace HandsOn {
     VJoystick::VJoystick(std::string name,
             short naxes,
             short nbuttons,
-            int vid) : Joystick(name, naxes, nbuttons) {
+            int vid) : Joystick(name, naxes, nbuttons, true) {
         this->vid = vid;
-        is_virtual = true;
     };
 
     VJoystick::~VJoystick() {
@@ -17,7 +16,7 @@ namespace HandsOn {
         }
     };
 
-    void VJoystick::SetInput(Input& input) {
+    void VJoystick::SetInputValue(Input& input) {
         libevdev_uinput_write_event(
                 this->uidev,
                 input.GetDestinationType(),
@@ -33,16 +32,16 @@ namespace HandsOn {
         if (!this->evdev)
             return -1;
 
-        libevdev_set_name(this->evdev, this->name.c_str());
+        libevdev_set_name(this->evdev, this->GetName().c_str());
 
         libevdev_enable_event_type(this->evdev, EV_ABS);
-        for (int i = 0; i < this->naxes ; i++) {
+        for (int i = 0; i < this->GetAxesCount() ; i++) {
             struct input_absinfo absinfo = {0, -32768, 32768, 0, 0, 0};
             libevdev_enable_event_code(this->evdev, EV_ABS, i, &absinfo);
         }
 
         libevdev_enable_event_type(this->evdev, EV_KEY);
-        for (int i = 0; i < this->nbuttons ; i++) {
+        for (int i = 0; i < this->GetButtonsCount() ; i++) {
             libevdev_enable_event_code(this->evdev, EV_KEY, 0x100 + i, nullptr);
         }
 

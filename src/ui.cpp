@@ -88,10 +88,10 @@ void left_panel(
     std::string button_name = "N/A";
     static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_DrawLinesFull;
     if (ImGui::TreeNodeEx("Axes", base_flags)) {
-        for (int i = 0; i < joystick.naxes; i++) {
+        for (int i = 0; i < joystick.GetAxesCount(); i++) {
             int push_count = 0;
             bool active = false;
-            auto* input = &joystick.inputs[i];
+            auto* input = &joystick.GetInput(i);
 
             raw_value = input->GetRawValue();
             if (ui_context.selected_input == input) {
@@ -116,9 +116,9 @@ void left_panel(
         ImGui::TreePop();
     }
     if (ImGui::TreeNodeEx("Buttons", base_flags)) {
-        for (int i = joystick.naxes; i < joystick.inputs.size(); i++) {
+        for (int i = joystick.GetAxesCount(); i < joystick.GetInputCount(); i++) {
             int push_count = 0;
-            auto* input = &joystick.inputs[i];
+            auto* input = &joystick.GetInput(i);
             bool active = false;
 
             raw_value = input->GetRawValue();
@@ -135,7 +135,7 @@ void left_panel(
                 ui_context.selected_input = input;
             }
 
-            int index = i + 1 - joystick.naxes;
+            int index = i + 1 - joystick.GetAxesCount();
             button_name = "Button " + std::to_string(index);
             if (ImGui::Button(button_name.c_str()))
                 ui_context.selected_input = input;
@@ -168,13 +168,13 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
 
     std::vector<std::string> name_list;
     name_list.push_back("None");
-    for (auto entry : vjs_list)
-        name_list.push_back(entry->name);
+    for (auto& vjs : vjs_list)
+        name_list.push_back(vjs->GetName());
     int selected_vjs_id = 0;
 
     if (selected_input != nullptr && (*selected_input)()) {
         auto it = std::find_if(vjs_list.begin(), vjs_list.end(), [&](const auto& vjs_item) {
-                return selected_input->GetDestinationJoystick()->name == vjs_item->name;
+                return selected_input->GetDestinationJoystick()->GetName() == vjs_item->GetName();
                 });
 
         if (it != vjs_list.end()) 
@@ -199,8 +199,8 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
     }
 
     if (selected_input != nullptr && (*selected_input)()) {
-        int naxes = selected_input->GetDestinationJoystick()->naxes;
-        int nbuttons = selected_input->GetDestinationJoystick()->nbuttons;
+        int naxes = selected_input->GetDestinationJoystick()->GetAxesCount();
+        int nbuttons = selected_input->GetDestinationJoystick()->GetButtonsCount();
         int input_size = naxes + nbuttons;
 
         bool is_axis = false;
@@ -283,11 +283,10 @@ void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context
     int item_selected_idx = 0;
     auto& js_list = context.GetJSList();
     auto& vjs_list = context.GetVJSList();
-    bool opened[] = { true, true };
 
-    if (ImGui::BeginTabBar("MyTabBar")) {
+    if (ImGui::BeginTabBar("JoystickList")) {
         for (auto js : js_list) {
-            if (ImGui::BeginTabItem(js->name.c_str())) {
+            if (ImGui::BeginTabItem(js->GetName().c_str())) {
                 sdljoystick_ui_content(context, ui_context, *js.get());
                 ImGui::EndTabItem();
             }
@@ -295,13 +294,14 @@ void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context
 
         for (int i = 0; i < vjs_list.size(); i++) {
             auto vjs = vjs_list[i];
-            bool result = ImGui::BeginTabItem(vjs->name.c_str());
-            if (ImGui::IsItemClicked(2)) {
+            bool opened = true;
+            bool result = ImGui::BeginTabItem(vjs->GetName().c_str(), &opened);
+            if (!opened) {
                 for (auto& js : js_list) {
                     /*
                      *  TODO: Refactor this, clearInputs() or something.
                      */
-                    for (auto& input : js->inputs) {
+                    for (auto& input : js->GetInputs()) {
                         if (input.GetDestinationJoystick() == vjs) {
                             input.Clear();
                         }
@@ -311,7 +311,7 @@ void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context
                 vjs_list.erase(vjs_list.begin() + i);
             }
             if (result) {
-                ImGui::Text("This is the %s tab!", vjs->name.c_str());
+                ImGui::Text("This is the %s tab!", vjs->GetName().c_str());
                 ImGui::EndTabItem();
             }
         }
