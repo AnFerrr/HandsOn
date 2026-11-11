@@ -24,6 +24,10 @@ namespace HandsOn {
 
             void RemoveJoystick(int joystick_index);
             void RemoveVJoystick(int vjoystick_index);
+            void ClearVJoysticks() {
+                for (int i = vjs_list.size() - 1; i >= 0; i--)
+                    RemoveVJoystick(i);
+            };
 
             int JSCount() { return js_list.size(); };
             int VJSCount() { return vjs_list.size(); };

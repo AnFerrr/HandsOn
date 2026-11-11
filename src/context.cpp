@@ -12,6 +12,14 @@ namespace HandsOn {
         js_list.erase(js_list.begin() + joystick_index);
     };
     void Context::RemoveVJoystick(int vjoystick_index) {
+        for (auto& joystick : this->js_list) {
+            for (auto& input : joystick->GetInputs()) {
+                if (input.GetDestinationJoystick() == vjs_list[vjoystick_index]) {
+                    input.Clear();
+                }
+            }
+        }
+
         vjs_list.erase(vjs_list.begin() + vjoystick_index);
     };
 }

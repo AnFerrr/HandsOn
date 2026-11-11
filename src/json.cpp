@@ -9,6 +9,7 @@ using nlohmann::json;
 // BUG: loading twice crashes
 void HandsOn::load_config(HandsOn::Context& context) {
     auto& js_list = context.GetJSList();
+    context.ClearVJoysticks();
     auto& vjs_list = context.GetVJSList();
     std::ifstream f("config.json");
     json data = json::parse(f);
@@ -30,7 +31,6 @@ void HandsOn::load_config(HandsOn::Context& context) {
     index = 0;
     for (auto& json_joystick : data["hardware_joysticks"]) {
         for (auto& joystick : js_list) {
-                std::cout << "Test" << std::endl;
             auto sdl_joystick = (HandsOn::SDLJoystick*)joystick.get();
             std::string guid;
             for (auto& data : SDL_GetJoystickGUID(sdl_joystick->js).data)

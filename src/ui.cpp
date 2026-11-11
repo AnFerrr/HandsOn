@@ -147,13 +147,12 @@ void left_panel(
     ImGui::EndChild();
 }
 
-// BUG: loaded selected input doesn't appear properly yet 
-// BUG: crash when loading over new config
 void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
-    static int item_selected_idx_input = 0;
     auto* selected_input = ui_context.selected_input;
     if (!selected_input)
         return;
+
+    int item_selected_idx_input = selected_input->GetDestinationInput() + 1;
 
     bool is_axis = selected_input->GetType() == HO_AXIS;
 
@@ -183,7 +182,7 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
 
     std::string combo_preview_value = name_list[selected_vjs_id];
 
-    if (ImGui::BeginCombo("Target virtual joystick selection", combo_preview_value.c_str())) {
+    if (ImGui::BeginCombo("Target virtual joystick", combo_preview_value.c_str())) {
         for (int n = 0; n < name_list.size(); n++) {
             const bool is_selected = (selected_vjs_id == n);
             if (ImGui::Selectable(name_list[n].c_str(), is_selected)) {
@@ -218,7 +217,7 @@ void right_panel(HandsOn::Context& context, HandsOn::UIContext& ui_context) {
         }
         combo_preview_value = name_list[item_selected_idx_input];
 
-        if (ImGui::BeginCombo("Target virtual input selection", combo_preview_value.c_str())) {
+        if (ImGui::BeginCombo("Target virtual input", combo_preview_value.c_str())) {
             for (int n = 0; n < name_list.size(); n++) {
                 is_axis = n < naxes;
                 const bool is_selected = (item_selected_idx_input == n);
@@ -297,18 +296,7 @@ void joystick_tab_list(HandsOn::Context& context, HandsOn::UIContext& ui_context
             bool opened = true;
             bool result = ImGui::BeginTabItem(vjs->GetName().c_str(), &opened);
             if (!opened) {
-                for (auto& js : js_list) {
-                    /*
-                     *  TODO: Refactor this, clearInputs() or something.
-                     */
-                    for (auto& input : js->GetInputs()) {
-                        if (input.GetDestinationJoystick() == vjs) {
-                            input.Clear();
-                        }
-                    }
-                }
-
-                vjs_list.erase(vjs_list.begin() + i);
+                context.RemoveVJoystick(i);
             }
             if (result) {
                 ImGui::Text("This is the %s tab!", vjs->GetName().c_str());
